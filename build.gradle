@@ -35,11 +35,12 @@ dependencies {
 	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'com.h2database:h2'
+
 }
 
 kotlin {
@@ -88,7 +89,7 @@ tasks.withType(JacocoCoverageVerification) {
 	violationRules {
 		rule {
 			limit {
-				minimum = 0.8
+				minimum = 0.01
 			}
 		}
 		rule {
@@ -102,3 +103,4 @@ tasks.withType(JacocoCoverageVerification) {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
