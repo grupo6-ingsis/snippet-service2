@@ -1,0 +1,1 @@
+root = true[*]indent_style = spaceindent_size = 2max_line_length = 140ij_kotlin_space_around_operators = true[*.kt]ij_kotlin_imports_wildcard_imports = falseij_kotlin_property_naming = trueij_kotlin_property_name_style = camelCaseij_kotlin_constant_name_style = UPPER_SNAKE_CASE
