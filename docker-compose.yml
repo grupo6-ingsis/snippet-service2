@@ -1,0 +1,28 @@
+services:
+  api:
+    container_name: "authorization-api"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8002:8080
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: authorization-db
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+
+  db:
+    container_name: postgres_db
+    image: postgres:16
+    ports:
+      - 5434:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: authorization-db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
