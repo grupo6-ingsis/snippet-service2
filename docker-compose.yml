@@ -1,6 +1,6 @@
 services:
   api:
-    container_name: "authorization-api"
+    container_name: "snippet-service-api"
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,19 +9,19 @@ services:
     environment:
       DB_USER: postgres
       DB_PASSWORD: password
-      DB_NAME: authorization-db
-      DB_HOST: postgres_db
+      DB_NAME: snippet-service-db
+      DB_HOST: postgres_db_snippet_service
       DB_PORT: 5432
 
   db:
-    container_name: postgres_db
+    container_name: postgres_db_snippet_service
     image: postgres:16
     ports:
       - 5434:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: authorization-db
+      POSTGRES_DB: snippet-service-db
     volumes:
       - pgdata:/var/lib/postgresql/data
 volumes:
