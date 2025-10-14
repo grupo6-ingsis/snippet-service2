@@ -14,7 +14,6 @@ class Snippet(
     @UuidGenerator
     @Column(updatable = false, nullable = false)
     val id: UUID? = null,
-
     @Column(nullable = false)
     var userId: String,
 
