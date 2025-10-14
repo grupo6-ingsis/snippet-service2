@@ -1,9 +1,13 @@
 package org.gudelker.snippet.service
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.boot.runApplication
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication
+@EntityScan("org.gudelker.snippet.service.snippets")
+@EnableJpaRepositories("org.gudelker.snippet.service.snippets")
 class SnippetServiceApplication
 
 fun main(args: Array<String>) {
