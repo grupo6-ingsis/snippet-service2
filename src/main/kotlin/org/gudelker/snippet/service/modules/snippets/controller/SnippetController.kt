@@ -2,8 +2,8 @@ package org.gudelker.snippet.service.modules.snippets.controller
 
 import jakarta.validation.Valid
 import org.gudelker.snippet.service.modules.snippets.Snippet
-import org.gudelker.snippet.service.modules.snippets.dto.SnippetDtoResponse
-import org.gudelker.snippet.service.modules.snippets.input.CreateSnippetInput
+import org.gudelker.snippet.service.modules.snippets.dto.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.input.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.service.SnippetService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -24,9 +24,9 @@ class SnippetController (
         return snippetService.getAllSnippets()
     }
 
-    @PostMapping("")
-    fun createSnippet(@RequestBody @Valid input: CreateSnippetInput ,@AuthenticationPrincipal jwt: Jwt ): SnippetDtoResponse {
-        return snippetService.createSnippet(
+    @PostMapping("/file")
+    fun createSnippetFromFile(@RequestBody @Valid input: CreateSnippetFromFileInput, @AuthenticationPrincipal jwt: Jwt ): SnippetFromFileResponse {
+        return snippetService.createSnippetFromFile(
             userId = jwt.id,
             input = input
         )

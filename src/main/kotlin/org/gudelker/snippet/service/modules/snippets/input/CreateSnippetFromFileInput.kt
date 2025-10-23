@@ -4,15 +4,17 @@ import jakarta.validation.constraints.NotBlank
 import lombok.AllArgsConstructor
 
 @AllArgsConstructor
-data class CreateSnippetInput(
+data class CreateSnippetFromFileInput(
 
     @field:NotBlank
     val title: String,
 
     @field:NotBlank
-    val content: String,
+    val description: String,
 
     @field:NotBlank
-    val language: String
+    val language: String,
+
+    val permissionNames: Set<String>? = null
 )
 

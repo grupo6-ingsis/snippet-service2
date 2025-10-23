@@ -2,7 +2,7 @@ package org.gudelker.snippet.service.modules.snippets.dto
 
 import jakarta.validation.constraints.NotBlank
 
-class SnippetDtoResponse (
+class SnippetFromFileResponse (
     @field:NotBlank
     val title: String,
 
