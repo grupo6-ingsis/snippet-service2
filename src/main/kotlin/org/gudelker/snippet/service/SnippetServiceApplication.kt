@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication
 @EntityScan("org.gudelker.snippet.service.snippets")
-@EnableJpaRepositories("org.gudelker.snippet.service.modules.snippets")
+@EnableJpaRepositories("org.gudelker.snippet.service.snippets")
 class SnippetServiceApplication
 
 fun main(args: Array<String>) {

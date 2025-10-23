@@ -1,6 +1,5 @@
-package org.gudelker.snippet.service.modules.snippets.repository
+package org.gudelker.snippet.service.snippets
 
-import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
