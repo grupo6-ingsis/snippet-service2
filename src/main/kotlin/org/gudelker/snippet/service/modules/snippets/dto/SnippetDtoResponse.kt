@@ -1,8 +1,8 @@
-package org.gudelker.snippet.service.snippets.dto
+package org.gudelker.snippet.service.modules.snippets.dto
 
 import jakarta.validation.constraints.NotBlank
 
-class SnippetDto (
+class SnippetDtoResponse (
     @field:NotBlank
     val title: String,
 
