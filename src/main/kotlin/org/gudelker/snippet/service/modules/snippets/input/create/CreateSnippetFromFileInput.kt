@@ -1,14 +1,12 @@
-package org.gudelker.snippet.service.modules.snippets.dto
+package org.gudelker.snippet.service.modules.snippets.input.create
 
 import jakarta.validation.constraints.NotBlank
 
-class SnippetFromFileResponse (
+data class CreateSnippetFromFileInput(
     @field:NotBlank
     val title: String,
-
     @field:NotBlank
     val content: String,
-
     @field:NotBlank
-    val userId: String,
+    val language: String,
 )

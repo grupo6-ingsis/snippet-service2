@@ -9,5 +9,6 @@ import org.springframework.test.context.ActiveProfiles
 class SnippetServiceApplicationTests {
     @Test
     fun contextLoads() {
+        print("Context Loads")
     }
 }
