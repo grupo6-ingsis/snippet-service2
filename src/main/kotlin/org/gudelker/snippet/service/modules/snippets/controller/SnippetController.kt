@@ -27,7 +27,7 @@ class SnippetController (
     @PostMapping("/file")
     fun createSnippetFromFile(@RequestBody @Valid input: CreateSnippetFromFileInput, @AuthenticationPrincipal jwt: Jwt ): SnippetFromFileResponse {
         return snippetService.createSnippetFromFile(
-            userId = jwt.id,
+            jwt = jwt,
             input = input
         )
     }
