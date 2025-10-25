@@ -1,22 +1,19 @@
 package org.gudelker.snippet.service.modules.snippets.service
+import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
-import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.repository.SnippetRepository
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClient
 import java.time.OffsetDateTime
 import java.util.UUID
 
 @Service
-class SnippetService(private val snippetRepository: SnippetRepository, private val restClient: RestClient) {
+class SnippetService(private val snippetRepository: SnippetRepository, private val authApiClient: AuthApiClient) {
     fun getAllSnippets(): List<Snippet> {
         return snippetRepository.findAll()
     }
@@ -27,7 +24,7 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
     ): SnippetFromFileResponse {
         val snippetId = UUID.randomUUID()
         val request = createAuthorizeRequestDto(jwt.id, listOf("OWNER"))
-        val authorization = authorizeSnippet(snippetId, request, jwt.tokenValue)
+        val authorization = authApiClient.authorizeSnippet(snippetId, request, jwt.tokenValue)
         if (!authorization.success) {
             throw RuntimeException("Authorization failed: ${authorization.message}")
         }
@@ -52,7 +49,7 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
             snippetRepository.findById(snippetId)
                 .orElseThrow { RuntimeException("Snippet not found") }
 
-        val authorization = authorizeUpdateSnippet(input.snippetId, jwt.tokenValue)
+        val authorization = authApiClient.authorizeUpdateSnippet(input.snippetId, jwt.tokenValue)
         if (!authorization) {
             throw RuntimeException("Authorization failed")
         }
@@ -70,37 +67,6 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
             language = snippet.language,
             updated = snippet.updated,
         )
-    }
-
-    private fun authorizeUpdateSnippet(
-        snippetId: String,
-        jwtToken: String,
-    ): Boolean {
-        val url = "http://authorization-service/authorize-update/$snippetId"
-        val response =
-            restClient.get()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $jwtToken")
-                .retrieve()
-                .body(Boolean::class.java)
-        return response ?: throw RuntimeException("No response from authorization service")
-    }
-
-    private fun authorizeSnippet(
-        snippetId: UUID,
-        request: AuthorizeRequestDto,
-        jwtToken: String,
-    ): AuthorizeResponseDto {
-        val url = "http://authorization-service/authorize/$snippetId"
-        val response =
-            restClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $jwtToken")
-                .body(request)
-                .retrieve()
-                .body(AuthorizeResponseDto::class.java)
-        return response ?: throw RuntimeException("No response from authorization service")
     }
 
     private fun createAuthorizeRequestDto(
