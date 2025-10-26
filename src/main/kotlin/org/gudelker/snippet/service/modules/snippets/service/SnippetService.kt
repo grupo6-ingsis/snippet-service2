@@ -23,14 +23,24 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
         jwt: Jwt,
     ): SnippetFromFileResponse {
         val snippetId = UUID.randomUUID()
-        val request = createAuthorizeRequestDto(jwt.id, listOf("OWNER"))
-        val authorization = authApiClient.authorizeSnippet(snippetId, request, jwt.tokenValue)
-        if (!authorization.success) {
-            throw RuntimeException("Authorization failed: ${authorization.message}")
+        val userId =
+            jwt.claims["sub"] as? String
+                ?: throw IllegalArgumentException("JWT missing 'sub' claim")
+        println("✅ User ID: $userId")
+        val request = createAuthorizeRequestDto(userId, listOf("OWNER"))
+        println("✅ Authorization request: $request")
+        try {
+            val authorization = authApiClient.authorizeSnippet(snippetId, request)
+            println("🟩 Auth service response: $authorization")
+        } catch (ex: Exception) {
+            println("🟥 Error calling Auth service: ${ex::class.simpleName} - ${ex.message}")
+            ex.printStackTrace()
+            throw ex
         }
-        val snippet = createSnippet(snippetId, jwt.id, input)
+        val snippet = createSnippet(snippetId, userId, input)
+        println("✅ Snippet to save: $snippet")
         snippetRepository.save(snippet)
-        return createSnippetFromFileResponse(input, jwt.id)
+        return createSnippetFromFileResponse(input, userId)
     }
 
     fun getSnippetsByUserId(userId: String): List<Snippet> {

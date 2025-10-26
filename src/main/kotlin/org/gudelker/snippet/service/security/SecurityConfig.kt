@@ -10,10 +10,11 @@ class SecurityConfig {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            .csrf { it.disable() }
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers("/snippets/**").authenticated()
-                    .anyRequest().denyAll()
+                    .anyRequest().permitAll()
             }
             .oauth2ResourceServer { it.jwt {} }
         return http.build()
