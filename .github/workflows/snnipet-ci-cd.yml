@@ -69,8 +69,10 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.short-sha.outputs.sha }}
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name == 'main' && 'latest' || format('{}-latest', github.ref_name) }}
+            tags: |
+                ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.short-sha.outputs.sha }}
+                ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-latest
+
   deploy:
     needs: push_to_registry
     runs-on: ubuntu-latest
