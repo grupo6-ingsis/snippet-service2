@@ -86,8 +86,8 @@ jobs:
           script: |
             cd ~/infra
             if [ "${GITHUB_REF##*/}" = "dev" ]; then
-              git switch dev
+              sudo git switch dev
             else
-              git switch main
+              sudo git switch main
             fi
             ./start-docker.sh
