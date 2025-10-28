@@ -1,0 +1,13 @@
+auth0:
+  audience: ${AUTH0_AUDIENCE}
+  client-id: ${AUTH0_CLIENT_ID}
+  client-secret: ${AUTH0_CLIENT_SECRET}
+  token-url: https://dev-dxya2auaytwzj1s4.us.auth0.com/oauth/token
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev-dxya2auaytwzj1s4.us.auth0.com/
+
+
