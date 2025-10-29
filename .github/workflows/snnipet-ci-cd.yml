@@ -98,4 +98,4 @@ jobs:
           script: |
             cd ~/infra
             sudo git pull
-            ./start-docker-dev.sh
+            ./start-docker.sh
