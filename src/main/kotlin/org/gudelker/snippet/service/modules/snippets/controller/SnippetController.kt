@@ -1,12 +1,15 @@
 package org.gudelker.snippet.service.modules.snippets.controller
 
 import jakarta.validation.Valid
+import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.Snippet
+import org.gudelker.snippet.service.modules.snippets.dto.PermissionTypeDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.service.SnippetService
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,11 +19,15 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.toEntity
 
 @RestController
 @RequestMapping("/snippets")
 class SnippetController(
     private val snippetService: SnippetService,
+    private val cachedTokenService: CachedTokenService,
+    private val restClient: RestClient,
 ) {
     @GetMapping("/all")
     fun getAllSnippets(
@@ -57,5 +64,34 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): List<Snippet> {
         return snippetService.getSnippetsByUserId(userId)
+    }
+
+    @GetMapping("/{snippetId}")
+    fun getSnippetById(
+        @PathVariable snippetId: String,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<Snippet> {
+        val userId = jwt.subject
+        val token = cachedTokenService.getToken()
+
+        val permissions: List<PermissionTypeDto> =
+            restClient.get()
+                .uri { builder ->
+                    builder.path("http://authorization-api:8080/permissions/{snippetId}")
+                        .queryParam("userId", userId)
+                        .build(snippetId)
+                }
+                .header("Authorization", "Bearer $token")
+                .retrieve()
+                .toEntity<List<PermissionTypeDto>>()
+                .body ?: emptyList()
+
+        if (PermissionTypeDto.READ !in permissions) {
+            return ResponseEntity.status(403).build()
+        }
+
+        val snippet = snippetService.getSnippetById(snippetId)
+
+        return ResponseEntity.ok(snippet)
     }
 }

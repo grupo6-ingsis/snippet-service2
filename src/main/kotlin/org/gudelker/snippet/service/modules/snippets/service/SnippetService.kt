@@ -79,6 +79,11 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
         )
     }
 
+    fun getSnippetById(snippetId: String): Snippet {
+        return snippetRepository.findById(UUID.fromString(snippetId))
+            .orElseThrow { RuntimeException("Snippet not found") }
+    }
+
     private fun createAuthorizeRequestDto(
         userId: String,
         permissions: List<String>,
