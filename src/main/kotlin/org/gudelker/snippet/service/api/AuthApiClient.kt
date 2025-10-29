@@ -21,7 +21,7 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.post()
-            .uri("http://authorization-service-api:8080/api/permissions/authorize/$snippetId")
+            .uri("http://authorization:8080/api/permissions/authorize/$snippetId")
             .contentType(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken") // M2M token
             .body(request)
@@ -37,7 +37,7 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()
-            .uri("http://authorization-service-api:8080/api/permissions/authorize-update/$snippetId")
+            .uri("http://authorization:8080/api/permissions/authorize-update/$snippetId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .retrieve()
             .body(Boolean::class.java)
