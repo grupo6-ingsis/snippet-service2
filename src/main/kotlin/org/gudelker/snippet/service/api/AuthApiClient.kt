@@ -19,7 +19,7 @@ class AuthApiClient(
         request: AuthorizeRequestDto,
     ): AuthorizeResponseDto {
         val machineToken = cachedTokenService.getToken()
-
+        println("🔑 Using machine token: $machineToken")
         return restClient.post()
             .uri("http://authorization:8080/api/permissions/authorize/$snippetId")
             .contentType(MediaType.APPLICATION_JSON)
