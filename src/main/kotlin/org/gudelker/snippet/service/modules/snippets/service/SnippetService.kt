@@ -32,7 +32,6 @@ class SnippetService(private val snippetRepository: SnippetRepository, private v
         try {
             val authorization = authApiClient.authorizeSnippet(snippetId, request)
             println("🟩 Auth service response: $authorization")
-            println("🟩 Auth service response: $authorization")
         } catch (ex: Exception) {
             println("🟥 Error calling Auth service: ${ex::class.simpleName} - ${ex.message}")
             ex.printStackTrace()
