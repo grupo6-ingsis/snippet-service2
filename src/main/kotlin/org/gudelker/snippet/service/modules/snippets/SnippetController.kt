@@ -1,14 +1,12 @@
-package org.gudelker.snippet.service.modules.snippets.controller
+package org.gudelker.snippet.service.modules.snippets
 
 import jakarta.validation.Valid
 import org.gudelker.snippet.service.auth.CachedTokenService
-import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionTypeDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.service.SnippetService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt

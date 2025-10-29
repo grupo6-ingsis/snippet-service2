@@ -1,12 +1,12 @@
-package org.gudelker.snippet.service.modules.snippets.service
+package org.gudelker.snippet.service.modules.snippets
+
 import org.gudelker.snippet.service.api.AuthApiClient
-import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.repository.SnippetRepository
+import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
