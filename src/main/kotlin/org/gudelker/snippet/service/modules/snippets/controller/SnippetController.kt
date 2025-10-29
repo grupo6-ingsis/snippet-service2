@@ -81,7 +81,7 @@ class SnippetController(
                         .queryParam("userId", userId)
                         .build(snippetId)
                 }
-                .header("Authorization", "Bearer $token")
+                .header("Authorization")
                 .retrieve()
                 .toEntity<List<PermissionTypeDto>>()
                 .body ?: emptyList()
