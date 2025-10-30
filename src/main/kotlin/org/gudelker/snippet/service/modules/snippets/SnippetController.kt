@@ -10,6 +10,7 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -102,8 +103,9 @@ class SnippetController(
                 }
                 .header("Authorization", "Bearer $token")
                 .retrieve()
-                .toEntity<List<PermissionType>>()
-                .body ?: emptyList()
+                .body(
+                    object : ParameterizedTypeReference<List<PermissionType>>() {}
+                ) ?: emptyList()
 
         if (PermissionType.READ !in permissions) {
             return ResponseEntity.status(403).build()
