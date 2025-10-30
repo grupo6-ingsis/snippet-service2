@@ -87,7 +87,8 @@ class SnippetController(
     ): ResponseEntity<Snippet> {
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
-
+        println(token)
+        println("**********************************************************************************")
         val permissions: List<PermissionType> =
             restClient.get()
                 .uri { builder ->
