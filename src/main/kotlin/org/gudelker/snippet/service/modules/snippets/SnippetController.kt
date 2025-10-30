@@ -104,7 +104,7 @@ class SnippetController(
         val permissions: List<PermissionType> =
             restClient.get()
                 .uri { builder ->
-                    builder.path("http://authorization-api:8080/permissions/{snippetId}")
+                    builder.path("http://authorization:8080/permissions/{snippetId}")
                         .queryParam("userId", userId)
                         .build(snippetId)
                 }
