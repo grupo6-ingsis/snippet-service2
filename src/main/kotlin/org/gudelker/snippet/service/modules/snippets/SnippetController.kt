@@ -93,7 +93,7 @@ class SnippetController(
         try {
             val permissions: List<PermissionType> =
                 restClient.get()
-                    .uri("http://authorization-api:8080/permissions/{snippetId}?userId={userId}",
+                    .uri("http://authorization:8080/permissions/{snippetId}?userId={userId}",
                         snippetId, userId)
                     .header("Authorization", "Bearer $token")
                     .retrieve()
