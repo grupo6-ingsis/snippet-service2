@@ -90,24 +90,28 @@ class SnippetController(
         val token = cachedTokenService.getToken()
         println(token)
         println("**********************************************************************************")
-        val permissions: List<PermissionType> =
-            restClient.get()
-                .uri { builder ->
-                    builder.path("http://authorization-api:8080/permissions/{snippetId}")
-                        .queryParam("userId", userId)
-                        .build(snippetId)
-                }
-                .header("Authorization", "Bearer $token")
-                .retrieve()
-                .toEntity<List<PermissionType>>()
-                .body ?: emptyList()
+        try {
+            val permissions: List<PermissionType> =
+                restClient.get()
+                    .uri("http://authorization-api:8080/permissions/{snippetId}?userId={userId}",
+                        snippetId, userId)
+                    .header("Authorization", "Bearer $token")
+                    .retrieve()
+                    .toEntity<List<PermissionType>>()
+                    .body ?: emptyList()
+            if (PermissionType.READ !in permissions) {
+                return ResponseEntity.status(403).build()
+            }
 
-        if (PermissionType.READ !in permissions) {
-            return ResponseEntity.status(403).build()
+            val snippet = snippetService.getSnippetById(snippetId)
+
+            return ResponseEntity.ok(snippet)
+        } catch (e: Exception) {
+            println("Error calling authorization service: ${e.message}")
+            e.printStackTrace()
+            return ResponseEntity.status(500).build()
         }
 
-        val snippet = snippetService.getSnippetById(snippetId)
 
-        return ResponseEntity.ok(snippet)
     }
 }
