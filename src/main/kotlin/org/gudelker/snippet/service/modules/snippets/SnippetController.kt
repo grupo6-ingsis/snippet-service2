@@ -93,19 +93,14 @@ class SnippetController(
         val permissions: List<PermissionType> =
             restClient.get()
                 .uri { builder ->
-                    builder
-                        .scheme("http")
-                        .host("authorization-api")
-                        .port(8080)
-                        .path("/permissions/{snippetId}")
+                    builder.path("http://authorization-api:8080/permissions/{snippetId}")
                         .queryParam("userId", userId)
                         .build(snippetId)
                 }
                 .header("Authorization", "Bearer $token")
                 .retrieve()
-                .body(
-                    object : ParameterizedTypeReference<List<PermissionType>>() {}
-                ) ?: emptyList()
+                .toEntity<List<PermissionType>>()
+                .body ?: emptyList()
 
         if (PermissionType.READ !in permissions) {
             return ResponseEntity.status(403).build()
