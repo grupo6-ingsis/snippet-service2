@@ -8,13 +8,13 @@ import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileR
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
+import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClient
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -126,6 +126,59 @@ class SnippetService(
         // tal vez podemos hacer algo como ponerle status pending autorization o algo asi
         return snippet
     }
+
+    fun updateSnippetFromEditor(
+        input: UpdateSnippetFromEditorInput,
+        jwt: Jwt
+    ): UpdateSnippetFromEditorResponse {
+        if (input.title == null && input.content == null && input.language == null && input.description == null && input.version == null) {
+            throw IllegalArgumentException("At least one attribute (title, content, language, description, version) must be provided for update.")
+        }
+        val snippetId = UUID.fromString(input.snippetId)
+        val snippet = snippetRepository.findById(snippetId)
+            .orElseThrow { RuntimeException("Snippet not found") }
+
+        val userId = jwt.subject
+        try {
+            val isAuthorized = authApiClient.isUserAuthorizedToWriteSnippet(snippetId.toString(), userId)
+            if (!isAuthorized) {
+                throw RuntimeException("User does not have WRITE permission for this snippet")
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            throw ex
+        }
+
+        if (input.content != null && input.version != null) {
+            val parseRequest = ParseSnippetRequest(
+                snippetContent = input.content,
+                version = input.version
+            )
+            val parseResult = authApiClient.parseSnippet(parseRequest)
+            if (parseResult == ResultType.FAILURE) {
+                throw IllegalArgumentException("Snippet parsing failed")
+            }
+        }
+
+        input.title?.let { snippet.title = it }
+        input.description?.let { snippet.description = it }
+        input.content?.let { snippet.content = it }
+        input.language?.let { snippet.language = it }
+        input.version?.let { snippet.version = it }
+        snippet.updated = OffsetDateTime.now()
+
+        snippetRepository.save(snippet)
+        return UpdateSnippetFromEditorResponse(
+            snippetId = snippet.id.toString(),
+            title = snippet.title,
+            description = snippet.description,
+            content = snippet.content,
+            language = snippet.language,
+            version = snippet.version.toString(),
+            updated = snippet.updated,
+        )
+    }
+
     private fun createAuthorizeRequestDto(
         userId: String,
         permissions: List<PermissionType>,

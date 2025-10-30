@@ -4,9 +4,11 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -56,6 +58,17 @@ class SnippetController(
     ): UpdateSnippetFromFileResponse {
         return snippetService.updateSnippetFromFile(
             input = input,
+        )
+    }
+
+    @PutMapping("/update")
+    fun updateSnippetFromEditor(
+        @RequestBody @Valid input: UpdateSnippetFromEditorInput,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): UpdateSnippetFromEditorResponse {
+        return snippetService.updateSnippetFromEditor(
+            input = input,
+            jwt = jwt,
         )
     }
 
