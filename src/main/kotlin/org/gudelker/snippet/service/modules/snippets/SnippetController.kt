@@ -31,13 +31,15 @@ class SnippetController(
     private val restClient: RestClient,
 ) {
     @GetMapping("/all")
-    fun getAllSnippets(
-    ): List<Snippet> {
+    fun getAllSnippets(): List<Snippet> {
         return snippetService.getAllSnippets()
     }
 
     @PostMapping("/create")
-    fun createSnippet(@RequestBody input: CreateSnippetFromEditor, @AuthenticationPrincipal jwt: Jwt): Snippet {
+    fun createSnippet(
+        @RequestBody input: CreateSnippetFromEditor,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): Snippet {
         return snippetService.createSnippetFromEditor(input, jwt)
     }
 

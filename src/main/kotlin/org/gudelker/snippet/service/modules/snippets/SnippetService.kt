@@ -3,16 +3,16 @@ package org.gudelker.snippet.service.modules.snippets
 import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
-import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
-import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
-import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
-import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
+import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
+import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
+import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
+import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -51,9 +51,7 @@ class SnippetService(
         return snippetRepository.findByOwnerId(userId)
     }
 
-    fun updateSnippetFromFile(
-        input: UpdateSnippetFromFileInput,
-    ): UpdateSnippetFromFileResponse {
+    fun updateSnippetFromFile(input: UpdateSnippetFromFileInput): UpdateSnippetFromFileResponse {
         if (input.title == null && input.content == null && input.language == null) {
             throw IllegalArgumentException("At least one attribute (title, content, language) must be provided for update.")
         }
@@ -88,15 +86,19 @@ class SnippetService(
     }
 
     @Transactional
-    fun createSnippetFromEditor(input: CreateSnippetFromEditor, jwt: Jwt): Snippet {
+    fun createSnippetFromEditor(
+        input: CreateSnippetFromEditor,
+        jwt: Jwt,
+    ): Snippet {
         val snippetId = UUID.randomUUID()
         val userId = jwt.subject
         val request = createAuthorizeRequestDto(userId, listOf(PermissionType.OWNER))
         try {
-            val request = ParseSnippetRequest(
-                snippetContent = input.content,
-                version = input.version,
-            )
+            val request =
+                ParseSnippetRequest(
+                    snippetContent = input.content,
+                    version = input.version,
+                )
             val result = authApiClient.parseSnippet(request)
             if (result == ResultType.FAILURE) {
                 throw IllegalArgumentException("Snippet parsing failed")
@@ -106,16 +108,17 @@ class SnippetService(
             throw ex
         }
 
-        val snippet = Snippet(
-            id = snippetId,
-            ownerId = userId,
-            title = input.title,
-            content = input.content,
-            language = input.language,
-            version = input.version,
-            created = OffsetDateTime.now(),
-            updated = OffsetDateTime.now(),
-        )
+        val snippet =
+            Snippet(
+                id = snippetId,
+                ownerId = userId,
+                title = input.title,
+                content = input.content,
+                language = input.language,
+                version = input.version,
+                created = OffsetDateTime.now(),
+                updated = OffsetDateTime.now(),
+            )
         snippetRepository.save(snippet)
         try {
             authApiClient.authorizeSnippet(snippetId, request)
@@ -129,14 +132,17 @@ class SnippetService(
 
     fun updateSnippetFromEditor(
         input: UpdateSnippetFromEditorInput,
-        jwt: Jwt
+        jwt: Jwt,
     ): UpdateSnippetFromEditorResponse {
         if (input.title == null && input.content == null && input.language == null && input.description == null && input.version == null) {
-            throw IllegalArgumentException("At least one attribute (title, content, language, description, version) must be provided for update.")
+            throw IllegalArgumentException(
+                "At least one attribute (title, content, language, description, version) must be provided for update.",
+            )
         }
         val snippetId = UUID.fromString(input.snippetId)
-        val snippet = snippetRepository.findById(snippetId)
-            .orElseThrow { RuntimeException("Snippet not found") }
+        val snippet =
+            snippetRepository.findById(snippetId)
+                .orElseThrow { RuntimeException("Snippet not found") }
 
         val userId = jwt.subject
         try {
@@ -150,10 +156,11 @@ class SnippetService(
         }
 
         if (input.content != null && input.version != null) {
-            val parseRequest = ParseSnippetRequest(
-                snippetContent = input.content,
-                version = input.version
-            )
+            val parseRequest =
+                ParseSnippetRequest(
+                    snippetContent = input.content,
+                    version = input.version,
+                )
             val parseResult = authApiClient.parseSnippet(parseRequest)
             if (parseResult == ResultType.FAILURE) {
                 throw IllegalArgumentException("Snippet parsing failed")
@@ -212,6 +219,4 @@ class SnippetService(
     ): SnippetFromFileResponse {
         return SnippetFromFileResponse(input.title, input.content, userId)
     }
-
-
 }
