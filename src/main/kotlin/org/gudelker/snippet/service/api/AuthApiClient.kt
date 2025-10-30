@@ -54,4 +54,20 @@ class AuthApiClient(
             .retrieve()
             .body(ResultType::class.java) ?: throw RuntimeException("No response from snippet service")
     }
+
+    fun isUserAuthorizedToWriteSnippet(
+        snippetId: String,
+        userId: String,
+    ): Boolean {
+        val machineToken = cachedTokenService.getToken()
+
+        return restClient.post()
+            .uri("http://authorization-api:8080/api/permissions/can-write/$snippetId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+            .header("X-User-Id", userId)
+            .retrieve()
+            .body(Boolean::class.java)
+            ?: false
+    }
 }
