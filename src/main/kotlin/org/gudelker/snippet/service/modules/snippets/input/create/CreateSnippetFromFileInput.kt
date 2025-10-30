@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.snippets.input.create
 
 import jakarta.validation.constraints.NotBlank
+import org.gudelker.snippet.service.modules.snippets.dto.Version
 
 data class CreateSnippetFromFileInput(
     @field:NotBlank
@@ -9,4 +10,5 @@ data class CreateSnippetFromFileInput(
     val content: String,
     @field:NotBlank
     val language: String,
+    val version: Version,
 )

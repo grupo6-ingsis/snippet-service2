@@ -5,6 +5,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
+import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.hibernate.annotations.UuidGenerator
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -24,6 +25,8 @@ class Snippet(
     var content: String = "",
     @Column(nullable = false)
     var language: String = "",
+    @Column
+    var version: Version,
     @Column(nullable = false)
     var created: OffsetDateTime = OffsetDateTime.now(),
     @Column(nullable = false)

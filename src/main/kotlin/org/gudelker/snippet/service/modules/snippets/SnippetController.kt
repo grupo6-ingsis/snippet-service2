@@ -2,9 +2,10 @@ package org.gudelker.snippet.service.modules.snippets
 
 import jakarta.validation.Valid
 import org.gudelker.snippet.service.auth.CachedTokenService
-import org.gudelker.snippet.service.modules.snippets.dto.PermissionTypeDto
+import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
@@ -29,9 +30,13 @@ class SnippetController(
 ) {
     @GetMapping("/all")
     fun getAllSnippets(
-        @AuthenticationPrincipal jwt: Jwt,
     ): List<Snippet> {
         return snippetService.getAllSnippets()
+    }
+
+    @PostMapping("/create")
+    fun createSnippet(@RequestBody input: CreateSnippetFromEditor, @AuthenticationPrincipal jwt: Jwt): Snippet {
+        return snippetService.createSnippetFromEditor(input, jwt)
     }
 
     @PostMapping("/file")
@@ -48,10 +53,8 @@ class SnippetController(
     @PutMapping("/file")
     fun updateSnippetFromFile(
         @RequestBody @Valid input: UpdateSnippetFromFileInput,
-        @AuthenticationPrincipal jwt: Jwt,
     ): UpdateSnippetFromFileResponse {
         return snippetService.updateSnippetFromFile(
-            jwt = jwt,
             input = input,
         )
     }
@@ -72,7 +75,7 @@ class SnippetController(
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
 
-        val permissions: List<PermissionTypeDto> =
+        val permissions: List<PermissionType> =
             restClient.get()
                 .uri { builder ->
                     builder.path("http://authorization-api:8080/permissions/{snippetId}")
@@ -81,10 +84,10 @@ class SnippetController(
                 }
                 .header("Authorization", "Bearer $token")
                 .retrieve()
-                .toEntity<List<PermissionTypeDto>>()
+                .toEntity<List<PermissionType>>()
                 .body ?: emptyList()
 
-        if (PermissionTypeDto.READ !in permissions) {
+        if (PermissionType.READ !in permissions) {
             return ResponseEntity.status(403).build()
         }
 
