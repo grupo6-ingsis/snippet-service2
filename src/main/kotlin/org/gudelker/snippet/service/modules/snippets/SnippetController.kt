@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
@@ -78,6 +79,18 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): List<Snippet> {
         return snippetService.getSnippetsByUserId(userId)
+    }
+
+    @GetMapping("/get/filter")
+    fun getSnippetsByFilter(
+        @RequestParam(defaultValue = "all" ) accessType: String, // sería si es autor, compartido o all
+        @RequestParam(defaultValue = "") name: String,
+        @RequestParam(defaultValue = "") language: String,
+        @RequestParam(defaultValue = "true") passedLint: Boolean,
+        @RequestParam(defaultValue = "name") sortBy: String, // ordena por name, language, passedLint
+        @RequestParam(defaultValue = "desc") direction: String // asc o desc
+     ): List<Snippet> {
+        return snippetService.getSnippetsByFilter(accessType, name, language, passedLint, sortBy, direction)
     }
 
     @GetMapping("/{snippetId}")

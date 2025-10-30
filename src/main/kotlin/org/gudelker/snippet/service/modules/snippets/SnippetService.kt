@@ -87,7 +87,6 @@ class SnippetService(
             .orElseThrow { RuntimeException("Snippet not found") }
     }
 
-    @Transactional
     fun createSnippetFromEditor(input: CreateSnippetFromEditor, jwt: Jwt): Snippet {
         val snippetId = UUID.randomUUID()
         val userId = jwt.subject
@@ -211,6 +210,23 @@ class SnippetService(
         userId: String,
     ): SnippetFromFileResponse {
         return SnippetFromFileResponse(input.title, input.content, userId)
+    }
+
+    fun getSnippetsByFilter(
+        accessType: String,
+        name: String,
+        language: String,
+        passedLint: Boolean,
+        sortBy: String,
+        direction: String
+    ): List<Snippet> {
+        val authorSnippets = if (accessType == "author") {
+            snippetRepository.findByOwnerId(name)
+        } else {
+            emptyList()
+        }
+
+
     }
 
 

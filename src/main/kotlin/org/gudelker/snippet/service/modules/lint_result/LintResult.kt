@@ -6,7 +6,6 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import org.gudelker.snippet.service.modules.lint_rule.LintRule
 import org.gudelker.snippet.service.modules.snippets.Snippet
