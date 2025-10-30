@@ -99,6 +99,7 @@ class SnippetController(
                     .retrieve()
                     .toEntity<List<PermissionType>>()
                     .body ?: emptyList()
+            println(permissions)
             if (PermissionType.READ !in permissions) {
                 return ResponseEntity.status(403).build()
             }
