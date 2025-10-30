@@ -72,7 +72,7 @@ class SnippetController(
         )
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/user/{userId}")
     fun getSnippetsByUserId(
         @PathVariable userId: String,
         @AuthenticationPrincipal jwt: Jwt,
