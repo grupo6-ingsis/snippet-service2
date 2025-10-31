@@ -10,7 +10,6 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -91,16 +90,16 @@ class SnippetController(
         println(token)
         println("**********************************************************************************")
         try {
-            val permissions: List<PermissionType> =
+            val permission: PermissionType? =
                 restClient.get()
                     .uri("http://authorization:8080/api/permissions/{snippetId}?userId={userId}",
                         snippetId, userId)
                     .header("Authorization", "Bearer $token")
                     .retrieve()
-                    .toEntity<List<PermissionType>>()
-                    .body ?: emptyList()
-            println(permissions)
-            if (PermissionType.READ !in permissions) {
+                    .toEntity<PermissionType>()
+                    .body
+
+            if (permission == null) {
                 return ResponseEntity.status(403).build()
             }
 
