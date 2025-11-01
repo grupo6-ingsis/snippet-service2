@@ -136,16 +136,16 @@ class SnippetController(
         }
     }
 
-    @GetMapping("/test/getsnippet")
+    @GetMapping("/test/get/snippet")
     fun bucketTest2(): String {
-        try {
+        return try {
             val response = assetApiClient.getAsset("test-container", "test-key")
             println("✅ Asset fetched successfully: $response")
-            return response
+            response
         } catch (e: Exception) {
             println("❌ Error fetching asset: ${e.message}")
             e.printStackTrace()
+            "Error fetching asset: ${e.message}"
         }
-        return "Error fetching asset"
     }
 }
