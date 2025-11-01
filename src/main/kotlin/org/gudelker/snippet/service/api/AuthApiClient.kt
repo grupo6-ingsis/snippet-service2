@@ -2,7 +2,6 @@ package org.gudelker.snippet.service.api
 
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
-import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeResponseDto
 import org.springframework.http.HttpHeaders
@@ -31,9 +30,7 @@ class AuthApiClient(
             ?: throw RuntimeException("No response from authorization service")
     }
 
-    fun authorizeUpdateSnippet(
-        snippetId: String,
-    ): Boolean {
+    fun authorizeUpdateSnippet(snippetId: String): Boolean {
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()

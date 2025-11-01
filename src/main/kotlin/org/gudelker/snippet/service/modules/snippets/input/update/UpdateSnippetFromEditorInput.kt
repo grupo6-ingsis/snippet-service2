@@ -11,6 +11,5 @@ data class UpdateSnippetFromEditorInput(
     val description: String? = null,
     val language: String? = null,
     val content: String? = null,
-    val version: Version? = null
+    val version: Version? = null,
 )
-

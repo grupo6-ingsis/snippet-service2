@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.snippets
 
 import jakarta.validation.Valid
+import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
@@ -29,15 +30,18 @@ class SnippetController(
     private val snippetService: SnippetService,
     private val cachedTokenService: CachedTokenService,
     private val restClient: RestClient,
+    private val assetApiClient: AssetApiClient,
 ) {
     @GetMapping("/all")
-    fun getAllSnippets(
-    ): List<Snippet> {
+    fun getAllSnippets(): List<Snippet> {
         return snippetService.getAllSnippets()
     }
 
     @PostMapping("/create")
-    fun createSnippet(@RequestBody input: CreateSnippetFromEditor, @AuthenticationPrincipal jwt: Jwt): Snippet {
+    fun createSnippet(
+        @RequestBody input: CreateSnippetFromEditor,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): Snippet {
         return snippetService.createSnippetFromEditor(input, jwt)
     }
 
@@ -92,8 +96,11 @@ class SnippetController(
         try {
             val permission: PermissionType? =
                 restClient.get()
-                    .uri("http://authorization:8080/api/permissions/{snippetId}?userId={userId}",
-                        snippetId, userId)
+                    .uri(
+                        "http://authorization:8080/api/permissions/{snippetId}?userId={userId}",
+                        snippetId,
+                        userId,
+                    )
                     .header("Authorization", "Bearer $token")
                     .retrieve()
                     .toEntity<PermissionType>()
@@ -111,7 +118,13 @@ class SnippetController(
             e.printStackTrace()
             return ResponseEntity.status(500).build()
         }
+    }
 
-
+    @GetMapping("/test")
+    fun bucketTest() {
+        val container = "test-container"
+        val key = "test-key"
+        val content = "This is a test content."
+        assetApiClient.createAsset(container, key, content)
     }
 }

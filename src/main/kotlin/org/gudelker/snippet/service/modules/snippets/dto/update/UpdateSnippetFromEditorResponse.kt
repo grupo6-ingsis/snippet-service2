@@ -13,4 +13,3 @@ data class UpdateSnippetFromEditorResponse(
     val version: String?,
     val updated: OffsetDateTime,
 )
-
