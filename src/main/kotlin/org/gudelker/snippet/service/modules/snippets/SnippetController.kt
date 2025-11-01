@@ -125,6 +125,14 @@ class SnippetController(
         val container = "test-container"
         val key = "test-key"
         val content = "This is a test content."
-        assetApiClient.createAsset(container, key, content)
+
+        try {
+            println("🚀 Creating asset: $container/$key")
+            assetApiClient.createAsset(container, key, content)
+            println("✅ Asset created successfully")
+        } catch (e: Exception) {
+            println("❌ Error creating asset: ${e.message}")
+            e.printStackTrace()
+        }
     }
 }
