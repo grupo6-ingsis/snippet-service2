@@ -121,7 +121,7 @@ class SnippetService(
                 title = input.title,
                 content = input.content,
                 language = input.language,
-                version = input.version,
+                snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
             )
@@ -175,7 +175,7 @@ class SnippetService(
         input.description?.let { snippet.description = it }
         input.content?.let { snippet.content = it }
         input.language?.let { snippet.language = it }
-        input.version?.let { snippet.version = it }
+        input.version?.let { snippet.snippetVersion = it }
         snippet.updated = OffsetDateTime.now()
 
         snippetRepository.save(snippet)
@@ -185,7 +185,7 @@ class SnippetService(
             description = snippet.description,
             content = snippet.content,
             language = snippet.language,
-            version = snippet.version.toString(),
+            version = snippet.snippetVersion.toString(),
             updated = snippet.updated,
         )
     }
@@ -211,7 +211,7 @@ class SnippetService(
             title = input.title,
             content = input.content,
             language = input.language,
-            version = input.version,
+            snippetVersion = input.version,
             created = OffsetDateTime.now(),
             updated = OffsetDateTime.now(),
         )
