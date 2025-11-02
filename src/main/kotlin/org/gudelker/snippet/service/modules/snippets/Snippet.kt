@@ -23,7 +23,7 @@ class Snippet(
     var title: String = "",
     @Column(nullable = false)
     var content: String = "",
-    @Column
+    @Column(nullable = false)
     var description: String = "",
     @Column(nullable = false)
     var language: String = "",
