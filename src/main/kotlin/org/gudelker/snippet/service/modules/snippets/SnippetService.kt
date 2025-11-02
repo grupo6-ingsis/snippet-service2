@@ -1,6 +1,5 @@
 package org.gudelker.snippet.service.modules.snippets
 
-import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
@@ -16,6 +15,7 @@ import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -37,7 +37,7 @@ class SnippetService(
         val userId =
             jwt.claims["sub"] as? String
                 ?: throw IllegalArgumentException("JWT missing 'sub' claim")
-        val request = createAuthorizeRequestDto(userId, listOf(PermissionType.OWNER))
+        val request = createAuthorizeRequestDto(userId, PermissionType.WRITE)
         try {
             authApiClient.authorizeSnippet(snippetId, request)
         } catch (ex: Exception) {
@@ -98,21 +98,21 @@ class SnippetService(
     ): Snippet {
         val snippetId = UUID.randomUUID()
         val userId = jwt.subject
-        val request = createAuthorizeRequestDto(userId, listOf(PermissionType.OWNER))
-        try {
-            val request =
-                ParseSnippetRequest(
-                    snippetContent = input.content,
-                    version = input.version,
-                )
-            val result = authApiClient.parseSnippet(request)
-            if (result == ResultType.FAILURE) {
-                throw IllegalArgumentException("Snippet parsing failed")
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            throw ex
-        }
+        val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
+//        try {
+//            val parseRequest =
+//                ParseSnippetRequest(
+//                    snippetContent = input.content,
+//                    version = input.version,
+//                )
+//            val result = authApiClient.parseSnippet(parseRequest)
+//            if (result == ResultType.FAILURE) {
+//                throw IllegalArgumentException("Snippet parsing failed")
+//            }
+//        } catch (ex: Exception) {
+//            ex.printStackTrace()
+//            throw ex
+//        }
 
         val snippet =
             Snippet(
@@ -127,12 +127,10 @@ class SnippetService(
             )
         snippetRepository.save(snippet)
         try {
-            authApiClient.authorizeSnippet(snippetId, request)
+            authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         } catch (ex: Exception) {
-            ex.printStackTrace()
-            throw ex
-        } // no se que hacer si falla la autorizacion luego de crear el snippet
-        // tal vez podemos hacer algo como ponerle status pending autorization o algo asi
+            throw RuntimeException("Authorization failed", ex)
+        }
         return snippet
     }
 
@@ -194,11 +192,11 @@ class SnippetService(
 
     private fun createAuthorizeRequestDto(
         userId: String,
-        permissions: List<PermissionType>,
+        permission: PermissionType,
     ): AuthorizeRequestDto {
         return AuthorizeRequestDto(
             userId = userId,
-            permissions = permissions,
+            permission = permission,
         )
     }
 

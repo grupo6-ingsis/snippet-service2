@@ -21,7 +21,7 @@ class AuthApiClient(
     ): AuthorizeResponseDto {
         val machineToken = cachedTokenService.getToken()
         return restClient.post()
-            .uri("http://authorization-api:8080/api/permissions/authorize/$snippetId")
+            .uri("http://authorization:8080/api/permissions/authorize/$snippetId")
             .contentType(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken") // M2M token
             .body(request)
@@ -34,7 +34,7 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()
-            .uri("http://authorization-api:8080/api/permissions/authorize-update/$snippetId")
+            .uri("http://authorization:8080/api/permissions/authorize-update/$snippetId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .retrieve()
             .body(Boolean::class.java)
@@ -44,7 +44,7 @@ class AuthApiClient(
     fun parseSnippet(request: ParseSnippetRequest): ResultType {
         val machineToken = cachedTokenService.getToken()
         return restClient.post()
-            .uri("http://snippet-engine-api:8080/snippet/parse")
+            .uri("http://snippet-engine:8080/snippet/parse")
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .body(request)
@@ -59,7 +59,7 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.post()
-            .uri("http://authorization-api:8080/api/permissions/can-write/$snippetId")
+            .uri("http://authorization:8080/api/permissions/can-write/$snippetId")
             .contentType(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .header("X-User-Id", userId)
