@@ -96,7 +96,6 @@ class SnippetService(
         input: CreateSnippetFromEditor,
         jwt: Jwt,
     ): Snippet {
-        val snippetId = UUID.randomUUID()
         val userId = jwt.subject
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
 //        try {
@@ -116,7 +115,6 @@ class SnippetService(
 
         val snippet =
             Snippet(
-                id = snippetId,
                 ownerId = userId,
                 title = input.title,
                 content = input.content,
@@ -125,9 +123,12 @@ class SnippetService(
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
             )
-        snippetRepository.save(snippet)
+        val saved = snippetRepository.save(snippet)
         try {
-            authApiClient.authorizeSnippet(snippetId, authorizeRequest)
+            if (saved.id == null) {
+                throw RuntimeException("Failed to save snippet")
+            }
+            authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
         } catch (ex: Exception) {
             throw RuntimeException("Authorization failed", ex)
         }
