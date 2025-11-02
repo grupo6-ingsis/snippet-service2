@@ -136,10 +136,12 @@ class SnippetController(
         }
     }
 
-    @GetMapping("/test/get/snippet")
-    fun bucketTest2(): String {
+    @GetMapping("/test/get/snippet/{snippetId}")
+    fun bucketTest2(
+        @PathVariable snippetId: String,
+    ): String {
         return try {
-            val response = assetApiClient.getAsset("test-container", "test-key")
+            val response = assetApiClient.getAsset("snippets", snippetId)
             println("✅ Asset fetched successfully: $response")
             response
         } catch (e: Exception) {

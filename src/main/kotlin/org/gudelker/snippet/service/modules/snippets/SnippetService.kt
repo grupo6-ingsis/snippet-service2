@@ -125,6 +125,7 @@ class SnippetService(
                 ownerId = userId,
                 title = input.title,
                 language = input.language,
+                description = input.description,
                 snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
