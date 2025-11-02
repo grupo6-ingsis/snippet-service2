@@ -61,9 +61,8 @@ class SnippetService(
         if (input.title == null && input.content == null && input.language == null) {
             throw IllegalArgumentException("At least one attribute (title, content, language) must be provided for update.")
         }
-        val snippetId = UUID.fromString(input.snippetId)
         val snippet =
-            snippetRepository.findById(snippetId)
+            snippetRepository.findById(input.snippetId)
                 .orElseThrow { RuntimeException("Snippet not found") }
 
         val authorization = authApiClient.authorizeUpdateSnippet(input.snippetId)
@@ -72,15 +71,23 @@ class SnippetService(
         }
 
         input.title?.let { snippet.title = it }
-        input.content?.let { snippet.content = it }
         input.language?.let { snippet.language = it }
         snippet.updated = OffsetDateTime.now()
 
         snippetRepository.save(snippet)
+        if (input.content != null) {
+            return UpdateSnippetFromFileResponse(
+                snippetId = snippet.id.toString(),
+                title = snippet.title,
+                content = input.content,
+                language = snippet.language,
+                updated = snippet.updated,
+            )
+        }
         return UpdateSnippetFromFileResponse(
             snippetId = snippet.id.toString(),
             title = snippet.title,
-            content = snippet.content,
+            content = assetApiClient.getAsset("snippets", snippet.id.toString()),
             language = snippet.language,
             updated = snippet.updated,
         )
@@ -117,13 +124,13 @@ class SnippetService(
             Snippet(
                 ownerId = userId,
                 title = input.title,
-                content = input.content,
                 language = input.language,
                 snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
             )
         val saved = snippetRepository.save(snippet)
+
         try {
             if (saved.id == null) {
                 throw RuntimeException("Failed to save snippet")
@@ -131,6 +138,11 @@ class SnippetService(
             authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
         } catch (ex: Exception) {
             throw RuntimeException("Authorization failed", ex)
+        }
+        try {
+            assetApiClient.createAsset("snippets", saved.id.toString(), input.content)
+        } catch (ex: Exception) {
+            throw RuntimeException("Failed to save content", ex)
         }
         return snippet
     }
@@ -174,7 +186,6 @@ class SnippetService(
 
         input.title?.let { snippet.title = it }
         input.description?.let { snippet.description = it }
-        input.content?.let { snippet.content = it }
         input.language?.let { snippet.language = it }
         input.version?.let { snippet.snippetVersion = it }
         snippet.updated = OffsetDateTime.now()
@@ -184,7 +195,7 @@ class SnippetService(
             snippetId = snippet.id.toString(),
             title = snippet.title,
             description = snippet.description,
-            content = snippet.content,
+            content = input.content,
             language = snippet.language,
             version = snippet.snippetVersion.toString(),
             updated = snippet.updated,
@@ -210,7 +221,6 @@ class SnippetService(
             id = id,
             ownerId = ownerId,
             title = input.title,
-            content = input.content,
             language = input.language,
             snippetVersion = input.version,
             created = OffsetDateTime.now(),

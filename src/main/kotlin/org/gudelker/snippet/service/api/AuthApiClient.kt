@@ -30,7 +30,7 @@ class AuthApiClient(
             ?: throw RuntimeException("No response from authorization service")
     }
 
-    fun authorizeUpdateSnippet(snippetId: String): Boolean {
+    fun authorizeUpdateSnippet(snippetId: UUID): Boolean {
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()

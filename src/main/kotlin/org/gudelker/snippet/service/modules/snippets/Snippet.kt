@@ -22,8 +22,6 @@ class Snippet(
     @Column(nullable = false)
     var title: String = "",
     @Column(nullable = false)
-    var content: String = "",
-    @Column(nullable = false)
     var description: String = "",
     @Column(nullable = false)
     var language: String = "",
