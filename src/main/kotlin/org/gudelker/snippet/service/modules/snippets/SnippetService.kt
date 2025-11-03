@@ -1,6 +1,5 @@
 package org.gudelker.snippet.service.modules.snippets
 
-import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
@@ -10,6 +9,9 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
@@ -213,20 +215,29 @@ class SnippetService(
     }
 
     fun getSnippetsByFilter(
-        accessType: String,
+        jwt: Jwt,
+        accessType: AccessType,
         name: String,
         language: String,
         passedLint: Boolean,
-        sortBy: String,
-        direction: String
+        sortBy: SortByType,
+        direction: DirectionType
     ): List<Snippet> {
-        val authorSnippets = if (accessType == "author") {
-            snippetRepository.findByOwnerId(name)
-        } else {
-            emptyList()
+        val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(jwt.subject, accessType.name)
+        val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
+
+        val filtered = snippets.filter { snippet ->
+            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+                    (language.isEmpty() || snippet.language.equals(language, ignoreCase = true))
         }
 
+        val sorted = when (sortBy) {
+            SortByType.NAME -> filtered.sortedBy { it.title }
+            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
+            SortByType.PASSED_LINT -> filtered // TODO: implementar cuando el campo esté disponible
+        }
 
+        return if (direction == DirectionType.DESC) sorted.reversed() else sorted
     }
 
 

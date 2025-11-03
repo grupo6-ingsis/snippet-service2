@@ -4,6 +4,9 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
@@ -83,14 +86,15 @@ class SnippetController(
 
     @GetMapping("/get/filter")
     fun getSnippetsByFilter(
-        @RequestParam(defaultValue = "all" ) accessType: String, // sería si es autor, compartido o all
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestParam(defaultValue = "ALL" ) accessType: AccessType,
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
         @RequestParam(defaultValue = "true") passedLint: Boolean,
-        @RequestParam(defaultValue = "name") sortBy: String, // ordena por name, language, passedLint
-        @RequestParam(defaultValue = "desc") direction: String // asc o desc
+        @RequestParam(defaultValue = "NAME") sortBy: SortByType, // ordena por name, language, passedLint
+        @RequestParam(defaultValue = "DESC") direction: DirectionType
      ): List<Snippet> {
-        return snippetService.getSnippetsByFilter(accessType, name, language, passedLint, sortBy, direction)
+        return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
     }
 
     @GetMapping("/{snippetId}")
