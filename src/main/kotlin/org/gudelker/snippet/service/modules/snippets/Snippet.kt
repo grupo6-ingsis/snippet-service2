@@ -1,10 +1,13 @@
 // src/main/kotlin/org/gudelker/snippet/service/modules/snippets/Snippet.kt
 package org.gudelker.snippet.service.modules.snippets
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
+import jakarta.persistence.OneToOne
+import org.gudelker.snippet.service.modules.lintresult.LintResult
 import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.hibernate.annotations.UuidGenerator
 import java.time.OffsetDateTime
@@ -31,4 +34,8 @@ class Snippet(
     var created: OffsetDateTime = OffsetDateTime.now(),
     @Column(nullable = false)
     var updated: OffsetDateTime = OffsetDateTime.now(),
+
+    @OneToOne(mappedBy = "snippet", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var lintResult: LintResult? = null
+
 )

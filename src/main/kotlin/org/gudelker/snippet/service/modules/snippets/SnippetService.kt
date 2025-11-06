@@ -1,21 +1,28 @@
 package org.gudelker.snippet.service.modules.snippets
 
+import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
-import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
-import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
+import org.gudelker.snippet.service.modules.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
-import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
-import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
+import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
+import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
+import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
+import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
+import org.springframework.http.HttpStatus
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.HttpClientErrorException
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -24,6 +31,8 @@ class SnippetService(
     private val snippetRepository: SnippetRepository,
     private val authApiClient: AuthApiClient,
     private val assetApiClient: AssetApiClient,
+    private val lintConfigService: LintConfigService,
+    private val lintResultService: LintResultService
 ) {
     fun getAllSnippets(): List<Snippet> {
         return snippetRepository.findAll()
@@ -105,6 +114,7 @@ class SnippetService(
     ): Snippet {
         val userId = jwt.subject
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
+
 //        try {
 //            val parseRequest =
 //                ParseSnippetRequest(
@@ -235,4 +245,43 @@ class SnippetService(
     ): SnippetFromFileResponse {
         return SnippetFromFileResponse(input.title, input.content, userId)
     }
+
+    fun getSnippetsByFilter(
+        jwt: Jwt,
+        accessType: AccessType,
+        name: String,
+        language: String,
+        passedLint: Boolean,
+        sortBy: SortByType,
+        direction: DirectionType
+    ): List<Snippet> {
+        val userId = jwt.subject
+        if (userId.isEmpty()) {
+            throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
+        }
+
+        val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(userId, accessType.name)
+        val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
+
+        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
+
+        val filtered = snippets.filter { snippet ->
+            val passesAllRules = snippetPassesAllRules(snippet, userLintRules, lintResultService)
+
+            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+                    (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
+                    (!passedLint || passesAllRules)
+        }
+
+        val sorted = when (sortBy) {
+            SortByType.NAME -> filtered.sortedBy { it.title }
+            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
+            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
+                snippetPassesAllRules(snippet, userLintRules, lintResultService)
+            }
+        }
+
+        return if (direction == DirectionType.DESC) sorted.reversed() else sorted
+    }
 }
+

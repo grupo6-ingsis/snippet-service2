@@ -5,6 +5,9 @@ import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
+import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
@@ -82,6 +86,19 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): List<Snippet> {
         return snippetService.getSnippetsByUserId(userId)
+    }
+
+    @GetMapping("/get/filter")
+    fun getSnippetsByFilter(
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestParam(defaultValue = "ALL" ) accessType: AccessType,
+        @RequestParam(defaultValue = "") name: String,
+        @RequestParam(defaultValue = "") language: String,
+        @RequestParam(defaultValue = "true") passedLint: Boolean,
+        @RequestParam(defaultValue = "NAME") sortBy: SortByType,
+        @RequestParam(defaultValue = "DESC") direction: DirectionType
+     ): List<Snippet> {
+        return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
     }
 
     @GetMapping("/{snippetId}")

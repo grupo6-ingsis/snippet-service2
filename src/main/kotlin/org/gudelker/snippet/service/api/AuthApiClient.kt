@@ -67,4 +67,23 @@ class AuthApiClient(
             .body(Boolean::class.java)
             ?: false
     }
+
+    fun getSnippetsByAccessType(
+        userId: String,
+        accessType: String,
+    ): List<UUID> {
+        val machineToken = cachedTokenService.getToken()
+
+        return restClient.get()
+            .uri { builder ->
+                builder.path("http://authorization:8080/auth/api/permissions/snippetsByAccessType")
+                    .queryParam("userId", userId)
+                    .queryParam("accessType", accessType)
+                    .build()
+            }
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+            .retrieve()
+            .body(object : org.springframework.core.ParameterizedTypeReference<List<UUID>>() {})
+            ?: emptyList()
+    }
 }
