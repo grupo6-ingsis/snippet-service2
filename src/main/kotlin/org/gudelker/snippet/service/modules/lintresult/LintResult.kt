@@ -34,7 +34,7 @@ class LintResult {
     var line: Int = 0
 
     @Column(nullable = false)
-    var column: Int = 0
+    var columnNumber: Int = 0
 
     @Column
     var message: String? = null
