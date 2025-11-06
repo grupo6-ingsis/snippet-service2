@@ -4,10 +4,8 @@ import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
-import org.gudelker.snippet.service.modules.lint_config.LintConfig
-import org.gudelker.snippet.service.modules.lint_config.LintConfigService
-import org.gudelker.snippet.service.modules.lint_result.LintResultRepository
-import org.gudelker.snippet.service.modules.lint_result.LintResultService
+import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
+import org.gudelker.snippet.service.modules.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse

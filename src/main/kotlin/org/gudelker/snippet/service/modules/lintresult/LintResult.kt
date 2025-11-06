@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_result
+package org.gudelker.snippet.service.modules.lintresult
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -7,7 +7,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
-import org.gudelker.snippet.service.modules.lint_rule.LintRule
+import org.gudelker.snippet.service.modules.lintrule.LintRule
 import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.hibernate.annotations.UuidGenerator
 import java.util.UUID

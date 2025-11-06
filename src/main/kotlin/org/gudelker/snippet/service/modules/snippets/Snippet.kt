@@ -7,7 +7,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.OneToOne
-import org.gudelker.snippet.service.modules.lint_result.LintResult
+import org.gudelker.snippet.service.modules.lintresult.LintResult
 import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.hibernate.annotations.UuidGenerator
 import java.time.OffsetDateTime

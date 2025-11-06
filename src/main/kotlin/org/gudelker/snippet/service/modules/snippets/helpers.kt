@@ -1,7 +1,7 @@
 package org.gudelker.snippet.service.modules.snippets
 
-import org.gudelker.snippet.service.modules.lint_config.LintConfig
-import org.gudelker.snippet.service.modules.lint_result.LintResultService
+import org.gudelker.snippet.service.modules.lintconfig.LintConfig
+import org.gudelker.snippet.service.modules.lintresult.LintResultService
 
 fun snippetPassesAllRules(
     snippet: Snippet,

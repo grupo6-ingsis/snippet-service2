@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_config
+package org.gudelker.snippet.service.modules.lintconfig
 
 import org.springframework.stereotype.Service
 

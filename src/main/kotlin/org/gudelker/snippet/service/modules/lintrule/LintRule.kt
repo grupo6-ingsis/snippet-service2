@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_rule
+package org.gudelker.snippet.service.modules.lintrule
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

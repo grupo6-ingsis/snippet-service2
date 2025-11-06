@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_config
+package org.gudelker.snippet.service.modules.lintconfig
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository

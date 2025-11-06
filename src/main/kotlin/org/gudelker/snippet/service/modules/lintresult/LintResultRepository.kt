@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_result
+package org.gudelker.snippet.service.modules.lintresult
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository

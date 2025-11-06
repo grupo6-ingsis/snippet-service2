@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lint_rule
+package org.gudelker.snippet.service.modules.lintrule
 
 import org.springframework.stereotype.Service
 import java.util.UUID
