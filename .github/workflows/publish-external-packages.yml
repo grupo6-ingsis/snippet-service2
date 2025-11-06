@@ -33,6 +33,7 @@ jobs:
         run: ./gradlew ktlintFormat
       - name: Build with Gradle
         run: ./gradlew build
+
   push_to_registry:
     needs: build
     runs-on: ubuntu-latest
@@ -57,6 +58,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Sanitize branch name for tag
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          REF_NAME="${GITHUB_REF#refs/heads/}"
+          REF_SLUG="$(echo "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's|/|-|g' | sed 's|[^a-z0-9._-]|-|g' | sed 's|-\+|-|g' | sed 's|^-||; s|-$||')"
+          echo "REF_SLUG=$REF_SLUG" >> $GITHUB_ENV
+
+      - name: Set default REF_SLUG for non-push
+        if: ${{ github.event_name != 'push' }}
+        run: echo "REF_SLUG=manual" >> $GITHUB_ENV
+
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v4
@@ -67,4 +79,4 @@ jobs:
           platforms: linux/amd64
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.short-sha.outputs.sha }}
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-latest
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ env.REF_SLUG }}-latest
