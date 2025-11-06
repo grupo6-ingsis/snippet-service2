@@ -13,18 +13,21 @@ class AssetApiClient(
     fun generatePresignedUrl(
         container: String,
         key: String,
-    ): String {
-        // Opción 1: Si asset-service soporta presigned URLs (ideal)
-        // return restClient.post()
-        //     .uri("$baseUrl/presigned-url")
-        //     .contentType(MediaType.APPLICATION_JSON)
-        //     .body(mapOf("container" to container, "key" to key))
-        //     .retrieve()
-        //     .body(String::class.java)
-        //     ?: throw RuntimeException("Error generating presigned URL")
-
-        // Opción 2: URL directa del asset-service (más simple pero requiere auth)
-        return "$baseUrl/$container/$key"
+        expiresInMinutes: Int = 5,
+    ): PresignedUrlResponse {
+        return restClient.post()
+            .uri("$baseUrl/presigned-url")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                mapOf(
+                    "container" to container,
+                    "key" to key,
+                    "expiresInMinutes" to expiresInMinutes,
+                ),
+            )
+            .retrieve()
+            .body(PresignedUrlResponse::class.java)
+            ?: throw RuntimeException("Error generating presigned URL")
     }
 
     fun createAsset(
@@ -66,3 +69,8 @@ class AssetApiClient(
         }
     }
 }
+
+data class PresignedUrlResponse(
+    val uploadUrl: String,
+    val expiresAt: String,
+)

@@ -33,20 +33,19 @@ class SnippetService(
         jwt: Jwt,
     ): InitiateSnippetUploadResponse {
         val snippetId = UUID.randomUUID()
-        val userId = jwt.subject
 
-        val uploadUrl =
+        // Obtener presigned URL del asset-service
+        val presignedUrlResponse =
             assetApiClient.generatePresignedUrl(
                 container = "snippets-temp",
-                // prefijo temporal
                 key = snippetId.toString(),
+                expiresInMinutes = 5,
             )
 
         return InitiateSnippetUploadResponse(
             snippetId = snippetId,
-            uploadUrl = uploadUrl,
+            uploadUrl = presignedUrlResponse.uploadUrl,
             expiresIn = 300,
-            // 5 minutos para subir
         )
     }
 
@@ -121,7 +120,7 @@ class SnippetService(
         val authorizeRequest =
             AuthorizeRequestDto(
                 userId = userId,
-                permission = PermissionType.OWNER,
+                permission = PermissionType.WRITE,
             )
 
         try {
