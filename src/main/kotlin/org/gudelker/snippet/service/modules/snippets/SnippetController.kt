@@ -12,12 +12,14 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -91,13 +93,13 @@ class SnippetController(
     @GetMapping("/get/filter")
     fun getSnippetsByFilter(
         @AuthenticationPrincipal jwt: Jwt,
-        @RequestParam(defaultValue = "ALL" ) accessType: AccessType,
+        @RequestParam(defaultValue = "ALL") accessType: AccessType,
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
         @RequestParam(defaultValue = "true") passedLint: Boolean,
         @RequestParam(defaultValue = "NAME") sortBy: SortByType,
-        @RequestParam(defaultValue = "DESC") direction: DirectionType
-     ): List<Snippet> {
+        @RequestParam(defaultValue = "DESC") direction: DirectionType,
+    ): List<Snippet> {
         return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
     }
 
@@ -135,6 +137,18 @@ class SnippetController(
             e.printStackTrace()
             return ResponseEntity.status(500).build()
         }
+    }
+
+    @PatchMapping("/share/{snippetId}")
+    fun shareSnippet(
+        @PathVariable snippetId: String,
+        @AuthenticationPrincipal jwt: Jwt,
+        input: ShareSnippetInput,
+    ) {
+        snippetService.shareSnippet(
+            userId = jwt.subject,
+            input = input,
+        )
     }
 
     @GetMapping("/test")

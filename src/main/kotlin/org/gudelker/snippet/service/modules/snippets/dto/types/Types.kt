@@ -1,17 +1,18 @@
 package org.gudelker.snippet.service.modules.snippets.dto.types
+
 enum class AccessType {
     OWNER,
     SHARED,
-    ALL
+    ALL,
 }
 
 enum class DirectionType {
     ASC,
-    DESC
+    DESC,
 }
 
 enum class SortByType {
     NAME,
     LANGUAGE,
-    PASSED_LINT
+    PASSED_LINT,
 }

@@ -34,8 +34,6 @@ class Snippet(
     var created: OffsetDateTime = OffsetDateTime.now(),
     @Column(nullable = false)
     var updated: OffsetDateTime = OffsetDateTime.now(),
-
     @OneToOne(mappedBy = "snippet", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var lintResult: LintResult? = null
-
+    var lintResult: LintResult? = null,
 )

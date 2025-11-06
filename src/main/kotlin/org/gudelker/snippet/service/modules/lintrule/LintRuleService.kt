@@ -6,7 +6,7 @@ import java.util.UUID
 @Service
 class LintRuleService(
     private val lintRuleRepository: LintRuleRepository,
-){
+) {
     fun getLintRuleById(id: String): LintRule? {
         return lintRuleRepository.findLintRulesById(UUID.fromString(id))
     }

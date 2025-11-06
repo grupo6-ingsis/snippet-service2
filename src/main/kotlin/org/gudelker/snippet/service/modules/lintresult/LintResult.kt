@@ -18,18 +18,24 @@ class LintResult {
     @GeneratedValue(generator = "UUID")
     @UuidGenerator
     var id: UUID? = null
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "snippet_id", nullable = false)
     var snippet: Snippet? = null
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "lint_rule_id", nullable = false)
     var lintRule: LintRule? = null
+
     @Column(nullable = false)
     var passed: Boolean = false
+
     @Column(nullable = false)
     var line: Int = 0
+
     @Column(nullable = false)
     var column: Int = 0
+
     @Column
     var message: String? = null
 }
