@@ -95,7 +95,7 @@ class SnippetController(
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
         @RequestParam(defaultValue = "true") passedLint: Boolean,
-        @RequestParam(defaultValue = "NAME") sortBy: SortByType, // ordena por name, language, passedLint
+        @RequestParam(defaultValue = "NAME") sortBy: SortByType,
         @RequestParam(defaultValue = "DESC") direction: DirectionType
      ): List<Snippet> {
         return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
