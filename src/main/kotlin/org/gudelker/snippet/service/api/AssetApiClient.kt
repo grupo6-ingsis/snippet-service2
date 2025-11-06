@@ -10,6 +10,22 @@ class AssetApiClient(
 ) {
     private val baseUrl = "http://asset-service:8080/v1/asset"
 
+    fun generatePresignedUrl(
+        container: String,
+        key: String,
+    ): String {
+        // Opción 1: Si asset-service soporta presigned URLs (ideal)
+        // return restClient.post()
+        //     .uri("$baseUrl/presigned-url")
+        //     .contentType(MediaType.APPLICATION_JSON)
+        //     .body(mapOf("container" to container, "key" to key))
+        //     .retrieve()
+        //     .body(String::class.java)
+        //     ?: throw RuntimeException("Error generating presigned URL")
+
+        // Opción 2: URL directa del asset-service (más simple pero requiere auth)
+        return "$baseUrl/$container/$key"
+    }
     fun createAsset(
         container: String,
         key: String,
@@ -38,9 +54,14 @@ class AssetApiClient(
         container: String,
         key: String,
     ) {
-        restClient.delete()
-            .uri("$baseUrl/{container}/{key}", container, key)
-            .retrieve()
-            .toBodilessEntity()
+        try {
+            restClient.delete()
+                .uri("$baseUrl/{container}/{key}", container, key)
+                .retrieve()
+                .toBodilessEntity()
+        } catch (e: Exception) {
+            // Log pero no fallar si ya fue borrado
+            println("Warning: Could not delete asset $container/$key: ${e.message}")
+        }
     }
 }

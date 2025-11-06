@@ -4,11 +4,14 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.create.FinalizeSnippetRequest
+import org.gudelker.snippet.service.modules.snippets.dto.create.InitiateSnippetUploadResponse
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.input.create.InitiateSnippetUploadInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
@@ -32,6 +35,23 @@ class SnippetController(
     private val restClient: RestClient,
     private val assetApiClient: AssetApiClient,
 ) {
+    @PostMapping("/initiate-upload")
+    fun initiateSnippetUpload(
+        @RequestBody @Valid input: InitiateSnippetUploadInput,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<InitiateSnippetUploadResponse> {
+        val response = snippetService.initiateSnippetUpload(input, jwt)
+        return ResponseEntity.ok(response)
+    }
+    @PostMapping("/finalize-upload")
+    fun finalizeSnippetUpload(
+        @RequestBody @Valid request: FinalizeSnippetRequest,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<Snippet> {
+        val snippet = snippetService.finalizeSnippetUpload(request, jwt)
+        return ResponseEntity.ok(snippet)
+    }
+
     @GetMapping("/all")
     fun getAllSnippets(): List<Snippet> {
         return snippetService.getAllSnippets()
