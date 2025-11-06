@@ -35,15 +35,18 @@ class SnippetService(
         val snippetId = UUID.randomUUID()
         val userId = jwt.subject
 
-        val uploadUrl = assetApiClient.generatePresignedUrl(
-            container = "snippets-temp", // prefijo temporal
-            key = snippetId.toString()
-        )
+        val uploadUrl =
+            assetApiClient.generatePresignedUrl(
+                container = "snippets-temp",
+                // prefijo temporal
+                key = snippetId.toString(),
+            )
 
         return InitiateSnippetUploadResponse(
             snippetId = snippetId,
             uploadUrl = uploadUrl,
-            expiresIn = 300 // 5 minutos para subir
+            expiresIn = 300,
+            // 5 minutos para subir
         )
     }
 
@@ -55,23 +58,26 @@ class SnippetService(
         val snippetId = UUID.fromString(request.snippetId)
         val userId = jwt.subject
 
-        val content = try {
-            assetApiClient.getAsset("snippets-temp", snippetId.toString())
-        } catch (e: Exception) {
-            throw IllegalStateException("Snippet no encontrado en el bucket temporal.")
-        }
+        val content =
+            try {
+                assetApiClient.getAsset("snippets-temp", snippetId.toString())
+            } catch (e: Exception) {
+                throw IllegalStateException("Snippet no encontrado en el bucket temporal.")
+            }
 
-        val parseRequest = ParseSnippetRequest(
-            snippetContent = content,
-            version = request.version
-        )
+        val parseRequest =
+            ParseSnippetRequest(
+                snippetContent = content,
+                version = request.version,
+            )
 
-        val parseResult = try {
-            authApiClient.parseSnippet(parseRequest)
-        } catch (e: Exception) {
-            assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
-            throw IllegalStateException("Error al comunicarse con el engine: ${e.message}", e)
-        }
+        val parseResult =
+            try {
+                authApiClient.parseSnippet(parseRequest)
+            } catch (e: Exception) {
+                assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
+                throw IllegalStateException("Error al comunicarse con el engine: ${e.message}", e)
+            }
 
         if (parseResult == ResultType.FAILURE) {
             // Rollback
@@ -91,29 +97,32 @@ class SnippetService(
         }
 
         // Guardar metadata en DB
-        val snippet = Snippet(
-            id = snippetId,
-            ownerId = userId,
-            title = request.title,
-            description = request.description ?: "",
-            language = request.language,
-            snippetVersion = request.version,
-            created = OffsetDateTime.now(),
-            updated = OffsetDateTime.now()
-        )
+        val snippet =
+            Snippet(
+                id = snippetId,
+                ownerId = userId,
+                title = request.title,
+                description = request.description ?: "",
+                language = request.language,
+                snippetVersion = request.version,
+                created = OffsetDateTime.now(),
+                updated = OffsetDateTime.now(),
+            )
 
-        val savedSnippet = try {
-            snippetRepository.save(snippet)
-        } catch (e: Exception) {
-            // Si falla guardar en DB, limpiamos el bucket definitivo
-            assetApiClient.deleteAsset("snippets", snippetId.toString())
-            throw e
-        }
+        val savedSnippet =
+            try {
+                snippetRepository.save(snippet)
+            } catch (e: Exception) {
+                // Si falla guardar en DB, limpiamos el bucket definitivo
+                assetApiClient.deleteAsset("snippets", snippetId.toString())
+                throw e
+            }
 
-        val authorizeRequest = AuthorizeRequestDto(
-            userId = userId,
-            permission = PermissionType.OWNER
-        )
+        val authorizeRequest =
+            AuthorizeRequestDto(
+                userId = userId,
+                permission = PermissionType.OWNER,
+            )
 
         try {
             authApiClient.authorizeSnippet(snippetId, authorizeRequest)

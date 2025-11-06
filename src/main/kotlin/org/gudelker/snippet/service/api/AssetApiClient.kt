@@ -26,6 +26,7 @@ class AssetApiClient(
         // Opción 2: URL directa del asset-service (más simple pero requiere auth)
         return "$baseUrl/$container/$key"
     }
+
     fun createAsset(
         container: String,
         key: String,

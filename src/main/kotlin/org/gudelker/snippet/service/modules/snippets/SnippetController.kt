@@ -43,6 +43,7 @@ class SnippetController(
         val response = snippetService.initiateSnippetUpload(input, jwt)
         return ResponseEntity.ok(response)
     }
+
     @PostMapping("/finalize-upload")
     fun finalizeSnippetUpload(
         @RequestBody @Valid request: FinalizeSnippetRequest,
