@@ -16,6 +16,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB        # Tamaño máximo por archivo
+      max-request-size: 10MB    # Tamaño máximo del request completo
+      file-size-threshold: 1KB
 
 auth0:
   audience: ${AUTH0_AUDIENCE}

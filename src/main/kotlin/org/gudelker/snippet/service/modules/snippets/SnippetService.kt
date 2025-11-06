@@ -5,20 +5,19 @@ import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
-import org.gudelker.snippet.service.modules.snippets.dto.create.FinalizeSnippetRequest
-import org.gudelker.snippet.service.modules.snippets.dto.create.InitiateSnippetUploadResponse
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.create.InitiateSnippetUploadInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -28,114 +27,70 @@ class SnippetService(
     private val authApiClient: AuthApiClient,
     private val assetApiClient: AssetApiClient,
 ) {
-    fun initiateSnippetUpload(
-        input: InitiateSnippetUploadInput,
-        jwt: Jwt,
-    ): InitiateSnippetUploadResponse {
-        val snippetId = UUID.randomUUID()
-
-        // Validar extensión del archivo (opcional)
-        val allowedExtensions = listOf(".ps", ".kt", ".java", ".py")
-        val extension = input.filename.substringAfterLast(".")
-        if (!allowedExtensions.contains(".$extension")) {
-            throw IllegalArgumentException("Extension .$extension not allowed")
-        }
-
-        // Obtener presigned URL del asset-service para bucket TEMPORAL
-        val presignedUrlResponse =
-            assetApiClient.generatePresignedUrl(
-                container = "snippets-temp",
-                key = snippetId.toString(),
-                expiresInMinutes = 5,
-            )
-
-        return InitiateSnippetUploadResponse(
-            snippetId = snippetId,
-            uploadUrl = presignedUrlResponse.uploadUrl,
-            expiresIn = 300,
-        )
-    }
-
-    /**
-     * PASO 2: Validación transaccional + persistencia
-     * - Descarga del bucket temporal
-     * - Parsea con engine
-     * - Si OK: guarda en DB + mueve a bucket final + crea permisos
-     * - Si FAIL: rollback completo (borra temporal, no guarda en DB)
-     */
     @Transactional(rollbackFor = [Exception::class])
-    fun finalizeSnippetUpload(
-        request: FinalizeSnippetRequest,
+    fun createSnippetWithFile(
+        file: MultipartFile,
+        title: String,
+        description: String?,
+        language: String,
+        version: Version,
         jwt: Jwt,
     ): Snippet {
-        val snippetId = UUID.fromString(request.snippetId)
+        val snippetId = UUID.randomUUID()
         val userId = jwt.subject
 
-        // 1. Descargar contenido del bucket temporal
+        // 1. Leer contenido del archivo
         val content =
             try {
-                assetApiClient.getAsset("snippets-temp", snippetId.toString())
+                String(file.bytes, Charsets.UTF_8)
             } catch (e: Exception) {
-                throw IllegalStateException(
-                    "Snippet no encontrado en el bucket temporal. " +
-                        "Asegúrate de haber subido el archivo primero.",
-                    e,
-                )
+                throw IllegalArgumentException("No se pudo leer el archivo: ${e.message}")
             }
 
-        // 2. Validar con el engine (parse)
+        // Validar que no esté vacío
+        if (content.isBlank()) {
+            throw IllegalArgumentException("El archivo está vacío")
+        }
+
+        // Validar tamaño del contenido (ej: max 1MB de texto)
+        if (content.length > 1_000_000) {
+            throw IllegalArgumentException("El archivo es demasiado grande (max 1MB)")
+        }
+
+        // 2. Validar sintaxis con el engine ANTES de guardar nada
         val parseRequest =
             ParseSnippetRequest(
                 snippetContent = content,
-                version = request.version,
+                version = version,
             )
 
         val parseResult =
             try {
                 authApiClient.parseSnippet(parseRequest)
             } catch (e: Exception) {
-                // Si falla la comunicación con el engine, limpiar y abortar
-                assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
                 throw IllegalStateException(
-                    "Error al comunicarse con el engine: ${e.message}",
+                    "Error al comunicarse con el engine de validación: ${e.message}",
                     e,
                 )
             }
 
-        // 3. Si el parseo falla, rollback
+        // 3. Si el parseo falla, abortar inmediatamente
         if (parseResult == ResultType.FAILURE) {
-            assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
             throw IllegalArgumentException(
-                "El snippet tiene errores de sintaxis y no puede ser guardado. " +
-                    "Por favor, corrige los errores e intenta nuevamente.",
+                "El snippet contiene errores de sintaxis y no puede ser guardado. " +
+                    "Verifica tu código e intenta nuevamente.",
             )
         }
 
-        // 4. Mover a bucket definitivo (promoción)
-        try {
-            // Copiar a bucket final
-            assetApiClient.createAsset("snippets", snippetId.toString(), content)
-
-            // Borrar del temporal (limpieza)
-            assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
-        } catch (e: Exception) {
-            // Si falla la copia, limpiar temporal y abortar
-            assetApiClient.deleteAsset("snippets-temp", snippetId.toString())
-            throw IllegalStateException(
-                "Error al mover el snippet al bucket definitivo: ${e.message}",
-                e,
-            )
-        }
-
-        // 5. Guardar metadata en DB
+        // 4. Guardar metadata en DB
         val snippet =
             Snippet(
                 id = snippetId,
                 ownerId = userId,
-                title = request.title,
-                description = request.description ?: "",
-                language = request.language,
-                snippetVersion = request.version,
+                title = title,
+                description = description ?: "",
+                language = language,
+                snippetVersion = version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
             )
@@ -144,13 +99,22 @@ class SnippetService(
             try {
                 snippetRepository.save(snippet)
             } catch (e: Exception) {
-                // Si falla guardar en DB, limpiar bucket definitivo
-                assetApiClient.deleteAsset("snippets", snippetId.toString())
                 throw IllegalStateException(
                     "Error al guardar el snippet en la base de datos: ${e.message}",
                     e,
                 )
             }
+
+        // 5. Guardar contenido en asset-service
+        try {
+            assetApiClient.createAsset("snippets", snippetId.toString(), content)
+        } catch (e: Exception) {
+            // El @Transactional hará rollback de la DB automáticamente
+            throw IllegalStateException(
+                "Error al guardar el archivo en el storage: ${e.message}",
+                e,
+            )
+        }
 
         // 6. Crear permisos en authorization-service
         val authorizeRequest =
@@ -162,10 +126,15 @@ class SnippetService(
         try {
             authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         } catch (e: Exception) {
-            // Si falla autorización, limpiar asset (DB ya hizo rollback por @Transactional)
-            assetApiClient.deleteAsset("snippets", snippetId.toString())
+            // Limpiar asset manualmente (DB hace rollback automático por @Transactional)
+            try {
+                assetApiClient.deleteAsset("snippets", snippetId.toString())
+            } catch (cleanupError: Exception) {
+                // Log pero no fallar
+                println("⚠️ Warning: No se pudo limpiar el asset después de error de autorización: ${cleanupError.message}")
+            }
             throw IllegalStateException(
-                "Error al autorizar permisos: ${e.message}",
+                "Error al crear permisos: ${e.message}",
                 e,
             )
         }

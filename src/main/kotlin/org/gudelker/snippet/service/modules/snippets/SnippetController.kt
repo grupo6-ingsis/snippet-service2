@@ -4,16 +4,16 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
-import org.gudelker.snippet.service.modules.snippets.dto.create.FinalizeSnippetRequest
-import org.gudelker.snippet.service.modules.snippets.dto.create.InitiateSnippetUploadResponse
+import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetUploadResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.create.InitiateSnippetUploadInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/snippets")
@@ -35,22 +37,122 @@ class SnippetController(
     private val restClient: RestClient,
     private val assetApiClient: AssetApiClient,
 ) {
-    @PostMapping("/initiate-upload")
-    fun initiateSnippetUpload(
-        @RequestBody @Valid input: InitiateSnippetUploadInput,
+    @PostMapping(
+        "/upload",
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun uploadSnippet(
+        @RequestParam("file") file: MultipartFile,
+        @RequestParam("title") title: String,
+        @RequestParam("description", required = false) description: String?,
+        @RequestParam("language") language: String,
+        @RequestParam("version") version: Version,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<InitiateSnippetUploadResponse> {
-        val response = snippetService.initiateSnippetUpload(input, jwt)
-        return ResponseEntity.ok(response)
-    }
+    ): ResponseEntity<SnippetUploadResponse> {
+        // Validar que el archivo no esté vacío
+        if (file.isEmpty) {
+            return ResponseEntity.badRequest()
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = "El archivo está vacío",
+                        snippetId = null,
+                    ),
+                )
+        }
 
-    @PostMapping("/finalize-upload")
-    fun finalizeSnippetUpload(
-        @RequestBody @Valid request: FinalizeSnippetRequest,
-        @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<Snippet> {
-        val snippet = snippetService.finalizeSnippetUpload(request, jwt)
-        return ResponseEntity.ok(snippet)
+        // Validar extensión del archivo
+        val filename = file.originalFilename ?: ""
+        val allowedExtensions = listOf("ps", "kt", "java", "py", "js", "ts", "txt")
+        val extension = filename.substringAfterLast(".", "")
+
+        if (extension.isEmpty() || !allowedExtensions.contains(extension)) {
+            return ResponseEntity.badRequest()
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = "Extensión de archivo no permitida. Permitidas: ${allowedExtensions.joinToString(", ")}",
+                        snippetId = null,
+                    ),
+                )
+        }
+
+        // Validar tamaño del archivo (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            return ResponseEntity.status(413)
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = "El archivo es demasiado grande (máximo 5MB)",
+                        snippetId = null,
+                    ),
+                )
+        }
+
+        // Validar título
+        if (title.isBlank() || title.length > 200) {
+            return ResponseEntity.badRequest()
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = "El título debe tener entre 1 y 200 caracteres",
+                        snippetId = null,
+                    ),
+                )
+        }
+
+        return try {
+            val snippet =
+                snippetService.createSnippetWithFile(
+                    file = file,
+                    title = title.trim(),
+                    description = description?.trim(),
+                    language = language,
+                    version = version,
+                    jwt = jwt,
+                )
+
+            ResponseEntity.ok(
+                SnippetUploadResponse(
+                    success = true,
+                    message = "Snippet creado exitosamente",
+                    snippetId = snippet.id.toString(),
+                    snippet = snippet,
+                ),
+            )
+        } catch (e: IllegalArgumentException) {
+            // Errores de validación (sintaxis, formato, etc)
+            ResponseEntity.badRequest()
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = e.message ?: "Error de validación",
+                        snippetId = null,
+                    ),
+                )
+        } catch (e: IllegalStateException) {
+            // Errores de comunicación con servicios
+            ResponseEntity.status(500)
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = e.message ?: "Error del servidor",
+                        snippetId = null,
+                    ),
+                )
+        } catch (e: Exception) {
+            // Otros errores inesperados
+            e.printStackTrace()
+            ResponseEntity.status(500)
+                .body(
+                    SnippetUploadResponse(
+                        success = false,
+                        message = "Error inesperado: ${e.message}",
+                        snippetId = null,
+                    ),
+                )
+        }
     }
 
     @GetMapping("/all")
