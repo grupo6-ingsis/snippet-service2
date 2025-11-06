@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.snippets
 
 import jakarta.validation.Valid
+import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
@@ -33,15 +34,18 @@ class SnippetController(
     private val snippetService: SnippetService,
     private val cachedTokenService: CachedTokenService,
     private val restClient: RestClient,
+    private val assetApiClient: AssetApiClient,
 ) {
     @GetMapping("/all")
-    fun getAllSnippets(
-    ): List<Snippet> {
+    fun getAllSnippets(): List<Snippet> {
         return snippetService.getAllSnippets()
     }
 
     @PostMapping("/create")
-    fun createSnippet(@RequestBody input: CreateSnippetFromEditor, @AuthenticationPrincipal jwt: Jwt): Snippet {
+    fun createSnippet(
+        @RequestBody input: CreateSnippetFromEditor,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): Snippet {
         return snippetService.createSnippetFromEditor(input, jwt)
     }
 
@@ -76,7 +80,7 @@ class SnippetController(
         )
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/user/{userId}")
     fun getSnippetsByUserId(
         @PathVariable userId: String,
         @AuthenticationPrincipal jwt: Jwt,
@@ -104,25 +108,63 @@ class SnippetController(
     ): ResponseEntity<Snippet> {
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
+        println(token)
+        println("**********************************************************************************")
+        try {
+            val permission: PermissionType? =
+                restClient.get()
+                    .uri(
+                        "http://authorization:8080/api/permissions/{snippetId}?userId={userId}",
+                        snippetId,
+                        userId,
+                    )
+                    .header("Authorization", "Bearer $token")
+                    .retrieve()
+                    .toEntity<PermissionType>()
+                    .body
 
-        val permissions: List<PermissionType> =
-            restClient.get()
-                .uri { builder ->
-                    builder.path("http://authorization:8080/permissions/{snippetId}")
-                        .queryParam("userId", userId)
-                        .build(snippetId)
-                }
-                .header("Authorization", "Bearer $token")
-                .retrieve()
-                .toEntity<List<PermissionType>>()
-                .body ?: emptyList()
+            if (permission == null) {
+                return ResponseEntity.status(403).build()
+            }
 
-        if (PermissionType.READ !in permissions) {
-            return ResponseEntity.status(403).build()
+            val snippet = snippetService.getSnippetById(snippetId)
+
+            return ResponseEntity.ok(snippet)
+        } catch (e: Exception) {
+            println("Error calling authorization service: ${e.message}")
+            e.printStackTrace()
+            return ResponseEntity.status(500).build()
         }
+    }
 
-        val snippet = snippetService.getSnippetById(snippetId)
+    @GetMapping("/test")
+    fun bucketTest() {
+        val container = "test-container"
+        val key = "test-key"
+        val content = "This is a test content."
 
-        return ResponseEntity.ok(snippet)
+        try {
+            println("🚀 Creating asset: $container/$key")
+            assetApiClient.createAsset(container, key, content)
+            println("✅ Asset created successfully")
+        } catch (e: Exception) {
+            println("❌ Error creating asset: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    @GetMapping("/test/get/snippet/{snippetId}")
+    fun bucketTest2(
+        @PathVariable snippetId: String,
+    ): String {
+        return try {
+            val response = assetApiClient.getAsset("snippets", snippetId)
+            println("✅ Asset fetched successfully: $response")
+            response
+        } catch (e: Exception) {
+            println("❌ Error fetching asset: ${e.message}")
+            e.printStackTrace()
+            "Error fetching asset: ${e.message}"
+        }
     }
 }

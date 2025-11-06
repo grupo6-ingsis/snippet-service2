@@ -25,13 +25,11 @@ class Snippet(
     @Column(nullable = false)
     var title: String = "",
     @Column(nullable = false)
-    var content: String = "",
-    @Column
     var description: String = "",
     @Column(nullable = false)
     var language: String = "",
     @Column
-    var version: Version,
+    var snippetVersion: Version,
     @Column(nullable = false)
     var created: OffsetDateTime = OffsetDateTime.now(),
     @Column(nullable = false)
