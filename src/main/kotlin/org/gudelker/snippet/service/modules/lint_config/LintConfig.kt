@@ -21,6 +21,4 @@ class LintConfig {
     @ManyToOne
     @JoinColumn(name = "lint_rule_id", nullable = false)
     var lintRule: LintRule? = null
-    @Column(nullable = false)
-    var enabled: Boolean = true
 }

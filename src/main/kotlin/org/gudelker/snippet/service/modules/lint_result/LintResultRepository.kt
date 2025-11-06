@@ -6,5 +6,4 @@ import java.util.UUID
 
 @Repository
 interface LintResultRepository: JpaRepository<LintResult, UUID> {
-    fun findLintResultsBySnippetAndPassed(snippetId: UUID, passed: Boolean): List<LintResult>
 }

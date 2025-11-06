@@ -6,6 +6,5 @@ import java.util.UUID
 @Repository
 interface LintConfigRepository: JpaRepository<LintConfig, UUID> {
     fun findByUserId(userId: String): List<LintConfig>
-    fun findByUserIdAndRuleId(userId: String, ruleId: String): LintConfig?
-    fun findLintConfigsByUserIdAndEnabled(userId: String, enabled: Boolean): List<LintConfig>
+    fun findByUserIdAndLintRule(userId: String, ruleId: String): LintConfig?
 }

@@ -2,6 +2,10 @@ package org.gudelker.snippet.service.modules.snippets
 
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.lint_config.LintConfig
+import org.gudelker.snippet.service.modules.lint_config.LintConfigService
+import org.gudelker.snippet.service.modules.lint_result.LintResultRepository
+import org.gudelker.snippet.service.modules.lint_result.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
@@ -15,8 +19,10 @@ import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
+import org.springframework.http.HttpStatus
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
+import org.springframework.web.client.HttpClientErrorException
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -24,6 +30,8 @@ import java.util.UUID
 class SnippetService(
     private val snippetRepository: SnippetRepository,
     private val authApiClient: AuthApiClient,
+    private val lintConfigService: LintConfigService,
+    private val lintResultService: LintResultService
 ) {
     fun getAllSnippets(): List<Snippet> {
         return snippetRepository.findAll()
@@ -123,8 +131,7 @@ class SnippetService(
         } catch (ex: Exception) {
             ex.printStackTrace()
             throw ex
-        } // no se que hacer si falla la autorizacion luego de crear el snippet
-        // tal vez podemos hacer algo como ponerle status pending autorization o algo asi
+        }
         return snippet
     }
 
@@ -223,18 +230,30 @@ class SnippetService(
         sortBy: SortByType,
         direction: DirectionType
     ): List<Snippet> {
-        val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(jwt.subject, accessType.name)
+        val userId = jwt.subject
+        if (userId.isEmpty()) {
+            throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
+        }
+
+        val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(userId, accessType.name)
         val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
 
+        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
+
         val filtered = snippets.filter { snippet ->
+            val passesAllRules = snippetPassesAllRules(snippet, userLintRules, lintResultService)
+
             (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
-                    (language.isEmpty() || snippet.language.equals(language, ignoreCase = true))
+                    (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
+                    (!passedLint || passesAllRules)
         }
 
         val sorted = when (sortBy) {
             SortByType.NAME -> filtered.sortedBy { it.title }
             SortByType.LANGUAGE -> filtered.sortedBy { it.language }
-            SortByType.PASSED_LINT -> filtered // TODO: implementar cuando el campo esté disponible
+            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
+                snippetPassesAllRules(snippet, userLintRules, lintResultService)
+            }
         }
 
         return if (direction == DirectionType.DESC) sorted.reversed() else sorted

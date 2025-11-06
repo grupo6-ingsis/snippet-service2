@@ -4,5 +4,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class LintConfigService(private val lintConfigRepository: LintConfigRepository) {
-    fun
+    fun getAllRulesFromUser(userId: String): List<LintConfig> {
+        return lintConfigRepository.findByUserId(userId)
+    }
 }
