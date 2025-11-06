@@ -114,6 +114,7 @@ class SnippetService(
     ): Snippet {
         val userId = jwt.subject
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
+
 //        try {
 //            val parseRequest =
 //                ParseSnippetRequest(
