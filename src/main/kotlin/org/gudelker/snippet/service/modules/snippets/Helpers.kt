@@ -6,12 +6,13 @@ import org.gudelker.snippet.service.modules.lintresult.LintResultService
 fun snippetPassesAllRules(
     snippet: Snippet,
     userLintRules: List<LintConfig>,
-    lintResultService: LintResultService
+    lintResultService: LintResultService,
 ): Boolean {
-    return userLintRules.isEmpty() || userLintRules.all { lintConfig ->
-        lintResultService.snippetPassesRule(
-            snippet.id.toString(),
-            lintConfig.lintRule?.id.toString()
-        )
-    }
+    return userLintRules.isEmpty() ||
+        userLintRules.all { lintConfig ->
+            lintResultService.snippetPassesRule(
+                snippet.id.toString(),
+                lintConfig.lintRule?.id.toString(),
+            )
+        }
 }

@@ -5,6 +5,7 @@ import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
@@ -12,12 +13,14 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
+import java.util.UUID
 
 @RestController
 @RequestMapping("/snippets")
@@ -91,13 +95,13 @@ class SnippetController(
     @GetMapping("/get/filter")
     fun getSnippetsByFilter(
         @AuthenticationPrincipal jwt: Jwt,
-        @RequestParam(defaultValue = "ALL" ) accessType: AccessType,
+        @RequestParam(defaultValue = "ALL") accessType: AccessType,
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
         @RequestParam(defaultValue = "true") passedLint: Boolean,
         @RequestParam(defaultValue = "NAME") sortBy: SortByType,
-        @RequestParam(defaultValue = "DESC") direction: DirectionType
-     ): List<Snippet> {
+        @RequestParam(defaultValue = "DESC") direction: DirectionType,
+    ): List<Snippet> {
         return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
     }
 
@@ -134,6 +138,31 @@ class SnippetController(
             println("Error calling authorization service: ${e.message}")
             e.printStackTrace()
             return ResponseEntity.status(500).build()
+        }
+    }
+
+    @PatchMapping("/share/{snippetId}")
+    fun shareSnippet(
+        @PathVariable snippetId: String,
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestBody input: ShareSnippetInput,
+    ): ResponseEntity<ShareSnippetResponseDto> {
+        return try {
+            val response =
+                snippetService.shareSnippet(
+                    userId = jwt.subject,
+                    sharedUserId = input.sharedUserId,
+                    snippetId = UUID.fromString(snippetId),
+                )
+            ResponseEntity.ok(response)
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().build()
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(403).build()
+        } catch (e: Exception) {
+            println("Error sharing snippet: ${e.message}")
+            e.printStackTrace()
+            ResponseEntity.status(500).build()
         }
     }
 

@@ -5,5 +5,4 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface LintResultRepository: JpaRepository<LintResult, UUID> {
-}
+interface LintResultRepository : JpaRepository<LintResult, UUID>

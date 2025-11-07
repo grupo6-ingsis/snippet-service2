@@ -13,8 +13,10 @@ class LintRule {
     @GeneratedValue(generator = "UUID")
     @UuidGenerator
     var id: UUID? = null
+
     @Column(nullable = false, unique = true)
     var name: String = ""
+
     @Column(nullable = false)
     var description: String = ""
 }

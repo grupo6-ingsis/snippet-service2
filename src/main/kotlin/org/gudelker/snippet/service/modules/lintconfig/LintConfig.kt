@@ -16,8 +16,10 @@ class LintConfig {
     @GeneratedValue(generator = "UUID")
     @UuidGenerator
     var id: UUID? = null
+
     @Column(nullable = false)
     var userId: String = ""
+
     @ManyToOne
     @JoinColumn(name = "lint_rule_id", nullable = false)
     var lintRule: LintRule? = null

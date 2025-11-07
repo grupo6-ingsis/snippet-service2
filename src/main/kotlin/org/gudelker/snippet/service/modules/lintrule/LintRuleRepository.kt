@@ -6,6 +6,5 @@ import java.util.UUID
 
 @Repository
 interface LintRuleRepository : JpaRepository<LintRule, UUID> {
-    fun findLintRulesById(id: UUID): LintRule?
-    fun findLintRulesByName(name: String): List<LintRule>
+    fun findByName(name: String): List<LintRule>
 }
