@@ -8,8 +8,8 @@ import java.util.UUID
 interface LintConfigRepository : JpaRepository<LintConfig, UUID> {
     fun findByUserId(userId: String): List<LintConfig>
 
-    fun findByUserIdAndLintRule(
+    fun findByUserIdAndLintRuleId(
         userId: String,
-        ruleId: String,
+        ruleId: UUID,
     ): LintConfig?
 }
