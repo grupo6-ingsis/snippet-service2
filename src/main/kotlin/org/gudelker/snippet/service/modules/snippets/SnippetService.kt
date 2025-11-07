@@ -44,22 +44,47 @@ class SnippetService(
         input: CreateSnippetFromFileInput,
         jwt: Jwt,
     ): SnippetFromFileResponse {
-        val snippetId = UUID.randomUUID()
-        val userId =
-            jwt.subject
-        val request = createAuthorizeRequestDto(userId, PermissionType.WRITE)
-        try {
-            authApiClient.authorizeSnippet(snippetId, request)
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            throw ex
-        }
-        val content = input.content
-        val container = "snippets"
-        assetApiClient.createAsset(container, snippetId.toString(), content)
+        val userId = jwt.subject
+//         try {
+//            val parseRequest =
+//                ParseSnippetRequest(
+//                    snippetContent = input.content,
+//                    version = input.version,
+//                )
+//            val result = authApiClient.parseSnippet(parseRequest)
+//            if (result == ResultType.FAILURE) {
+//                throw IllegalArgumentException("Snippet parsing failed")
+//            }
+//        } catch (ex: Exception) {
+//            ex.printStackTrace()
+//            throw ex
+//        }
+        val snippet =
+            Snippet(
+                ownerId = userId,
+                title = input.title,
+                language = input.language,
+                description = input.description,
+                snippetVersion = input.version,
+                created = OffsetDateTime.now(),
+                updated = OffsetDateTime.now(),
+            )
+        val saved = snippetRepository.save(snippet)
+        val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
 
-        val snippet = createSnippet(snippetId, userId, input)
-        snippetRepository.save(snippet)
+        try {
+            if (saved.id == null) {
+                throw RuntimeException("Failed to save snippet")
+            }
+            authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
+        } catch (ex: Exception) {
+            throw RuntimeException("Authorization failed", ex)
+        }
+        try {
+            assetApiClient.createAsset("snippets", saved.id.toString(), input.content)
+        } catch (ex: Exception) {
+            throw RuntimeException("Failed to save content", ex)
+        }
         return createSnippetFromFileResponse(input, userId)
     }
 

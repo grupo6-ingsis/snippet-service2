@@ -11,4 +11,5 @@ data class CreateSnippetFromFileInput(
     @field:NotBlank
     val language: String,
     val version: Version,
+    val description: String,
 )
