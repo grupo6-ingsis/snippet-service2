@@ -5,6 +5,7 @@ import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
@@ -12,6 +13,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
+import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
@@ -143,13 +145,25 @@ class SnippetController(
     fun shareSnippet(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
-        sharedUserId: String,
-    ) {
-        snippetService.shareSnippet(
-            userId = jwt.subject,
-            sharedUserId = sharedUserId,
-            snippetId = UUID.fromString(snippetId),
-        )
+        @RequestBody input: ShareSnippetInput,
+    ): ResponseEntity<ShareSnippetResponseDto> {
+        return try {
+            val response =
+                snippetService.shareSnippet(
+                    userId = jwt.subject,
+                    sharedUserId = input.sharedUserId,
+                    snippetId = UUID.fromString(snippetId),
+                )
+            ResponseEntity.ok(response)
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().build()
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(403).build()
+        } catch (e: Exception) {
+            println("Error sharing snippet: ${e.message}")
+            e.printStackTrace()
+            ResponseEntity.status(500).build()
+        }
     }
 
     @GetMapping("/test")
