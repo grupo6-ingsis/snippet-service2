@@ -18,7 +18,6 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.HttpStatus
@@ -216,21 +215,22 @@ class SnippetService(
     }
 
     fun shareSnippet(
-        input: ShareSnippetInput,
+        sharedUserId: String,
+        snippetId: UUID,
         userId: String,
     ): ShareSnippetResponseDto {
         val snippet =
-            snippetRepository.findById(input.snippetId)
+            snippetRepository.findById(snippetId)
                 .orElseThrow { RuntimeException("Snippet not found") }
         if (snippet.ownerId != userId) {
             throw AccessDeniedException("Only the owner can share the snippet")
         }
-        val authorizeRequest = createAuthorizeRequestDto(input.sharedId, PermissionType.READ)
-        authApiClient.authorizeSnippet(input.snippetId, authorizeRequest)
+        val authorizeRequest = createAuthorizeRequestDto(sharedUserId, PermissionType.READ)
+        authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         return ShareSnippetResponseDto(
-            sharedUserId = input.sharedId,
+            sharedUserId = sharedUserId,
             userId = userId,
-            snippetId = input.snippetId,
+            snippetId = snippetId,
             permissionType = PermissionType.READ,
         )
     }

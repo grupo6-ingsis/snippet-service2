@@ -12,7 +12,6 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
-import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.http.ResponseEntity
@@ -29,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
+import java.util.UUID
 
 @RestController
 @RequestMapping("/snippets")
@@ -143,11 +143,12 @@ class SnippetController(
     fun shareSnippet(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
-        input: ShareSnippetInput,
+        sharedUserId: String,
     ) {
         snippetService.shareSnippet(
             userId = jwt.subject,
-            input = input,
+            sharedUserId = sharedUserId,
+            snippetId = UUID.fromString(snippetId),
         )
     }
 
