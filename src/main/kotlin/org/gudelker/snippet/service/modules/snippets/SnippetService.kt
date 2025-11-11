@@ -45,20 +45,20 @@ class SnippetService(
         jwt: Jwt,
     ): SnippetFromFileResponse {
         val userId = jwt.subject
-//         try {
-//            val parseRequest =
-//                ParseSnippetRequest(
-//                    snippetContent = input.content,
-//                    version = input.version,
-//                )
-//            val result = authApiClient.parseSnippet(parseRequest)
-//            if (result == ResultType.FAILURE) {
-//                throw IllegalArgumentException("Snippet parsing failed")
-//            }
-//        } catch (ex: Exception) {
-//            ex.printStackTrace()
-//            throw ex
-//        }
+        try {
+            val parseRequest =
+                ParseSnippetRequest(
+                    snippetContent = input.content,
+                    version = input.version,
+                )
+            val result = authApiClient.parseSnippet(parseRequest)
+            if (result == ResultType.FAILURE) {
+                throw IllegalArgumentException("Snippet parsing failed")
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            throw ex
+        }
         val snippet =
             Snippet(
                 ownerId = userId,
@@ -141,21 +141,20 @@ class SnippetService(
         val userId = jwt.subject
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
 
-//        try {
-//            val parseRequest =
-//                ParseSnippetRequest(
-//                    snippetContent = input.content,
-//                    version = input.version,
-//                )
-//            val result = authApiClient.parseSnippet(parseRequest)
-//            if (result == ResultType.FAILURE) {
-//                throw IllegalArgumentException("Snippet parsing failed")
-//            }
-//        } catch (ex: Exception) {
-//            ex.printStackTrace()
-//            throw ex
-//        }
-
+        try {
+            val parseRequest =
+                ParseSnippetRequest(
+                    snippetContent = input.content,
+                    version = input.version,
+                )
+            val result = authApiClient.parseSnippet(parseRequest)
+            if (result == ResultType.FAILURE) {
+                throw IllegalArgumentException("Snippet parsing failed")
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            throw ex
+        }
         val snippet =
             Snippet(
                 ownerId = userId,
