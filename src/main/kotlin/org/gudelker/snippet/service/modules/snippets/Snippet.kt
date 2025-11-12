@@ -29,7 +29,7 @@ class Snippet(
     @Column(nullable = false)
     var language: String = "",
     @Column
-    var snippetVersion: Version,
+    var snippetVersion: Version? = Version.V2,
     @Column(nullable = false)
     var created: OffsetDateTime = OffsetDateTime.now(),
     @Column(nullable = false)
