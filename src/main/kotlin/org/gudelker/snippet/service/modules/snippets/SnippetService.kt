@@ -8,6 +8,7 @@ import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.Version
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
@@ -142,10 +143,11 @@ class SnippetService(
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
 
         try {
+            val version = input.version ?: Version.V2
             val parseRequest =
                 ParseSnippetRequest(
                     snippetContent = input.content,
-                    version = input.version,
+                    version = version,
                 )
             val result = authApiClient.parseSnippet(parseRequest)
             if (result == ResultType.FAILURE) {
