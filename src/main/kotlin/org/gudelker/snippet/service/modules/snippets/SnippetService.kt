@@ -75,6 +75,7 @@ class SnippetService(
         try {
             if (saved.id == null) {
                 throw RuntimeException("Failed to save snippet")
+                println("Hola")
             }
             authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
         } catch (ex: Exception) {
