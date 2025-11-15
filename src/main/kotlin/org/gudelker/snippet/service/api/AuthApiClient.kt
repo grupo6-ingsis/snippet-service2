@@ -75,7 +75,7 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()
-            .uri("http://authorization:8080/auth/api/permissions/snippetsByAccessType?userId=" +
+            .uri("http://authorization:8080/api/permissions/snippetsByAccessType?userId=" +
                     "{userId}&accessType={accessType}", userId, accessType)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .retrieve()
