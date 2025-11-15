@@ -4,6 +4,7 @@ import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeResponseDto
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -74,12 +75,31 @@ class AuthApiClient(
     ): List<UUID> {
         val machineToken = cachedTokenService.getToken()
 
-        return restClient.get()
-            .uri("http://authorization:8080/api/permissions/snippetsByAccessType?userId=" +
-                    "{userId}&accessType={accessType}", userId, accessType)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
-            .retrieve()
-            .body(object : org.springframework.core.ParameterizedTypeReference<List<UUID>>() {})
-            ?: emptyList()
+        println("🔍 Calling authorization service")
+        println("🔍 UserId: $userId, AccessType: $accessType")
+
+        return try {
+            val response = restClient.get()
+                .uri { uriBuilder ->
+                    uriBuilder
+                        .scheme("http")
+                        .host("authorization")
+                        .port(8080)
+                        .path("/api/permissions/snippetsByAccessType")
+                        .queryParam("userId", userId)
+                        .queryParam("accessType", accessType)
+                        .build()
+                }
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+                .retrieve()
+                .body(object : ParameterizedTypeReference<List<UUID>>() {})
+
+            println("✅ Got ${response?.size ?: 0} snippets from authorization")
+            response ?: emptyList()
+        } catch (e: Exception) {
+            println("❌ Error calling authorization service: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }
