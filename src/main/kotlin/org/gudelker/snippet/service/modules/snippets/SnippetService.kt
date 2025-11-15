@@ -20,6 +20,9 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.oauth2.jwt.Jwt
@@ -295,13 +298,15 @@ class SnippetService(
 
     fun getSnippetsByFilter(
         jwt: Jwt,
+        page: Int,
+        pageSize: Int,
         accessType: AccessType,
         name: String,
         language: String,
         passedLint: Boolean,
         sortBy: SortByType,
-        direction: DirectionType,
-    ): List<Snippet> {
+        direction: DirectionType
+    ): Page<Snippet> {
         val userId = jwt.subject
         if (userId.isEmpty()) {
             throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
@@ -309,28 +314,39 @@ class SnippetService(
 
         val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(userId, accessType.name)
         val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
-
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
 
-        val filtered =
-            snippets.filter { snippet ->
-                val passesAllRules = snippetPassesAllRules(snippet, userLintRules, lintResultService)
+        val filtered = snippets.filter { snippet ->
+            val passesAllRules = if (userLintRules.isEmpty()) {
+                true
+            } else {
+                userLintRules.all { lintConfig ->
+                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                }
+            }
 
-                (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
                     (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
-            }
+        }
 
-        val sorted =
-            when (sortBy) {
-                SortByType.NAME -> filtered.sortedBy { it.title }
-                SortByType.LANGUAGE -> filtered.sortedBy { it.language }
-                SortByType.PASSED_LINT ->
-                    filtered.sortedBy { snippet ->
-                        snippetPassesAllRules(snippet, userLintRules, lintResultService)
-                    }
+        val sorted = when (sortBy) {
+            SortByType.NAME -> filtered.sortedBy { it.title }
+            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
+            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
+                if (userLintRules.isEmpty()) true
+                else userLintRules.all { lintConfig ->
+                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                }
             }
+        }
 
-        return if (direction == DirectionType.DESC) sorted.reversed() else sorted
+        val ordered = if (direction == DirectionType.DESC) sorted.reversed() else sorted
+
+        val start = page * pageSize
+        val end = minOf(start + pageSize, ordered.size)
+        val paginatedContent = if (start < ordered.size) ordered.subList(start, end) else emptyList()
+
+        return PageImpl(paginatedContent, PageRequest.of(page, pageSize), ordered.size.toLong())
     }
 }
