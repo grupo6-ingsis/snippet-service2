@@ -75,7 +75,8 @@ class AuthApiClient(
         val machineToken = cachedTokenService.getToken()
 
         return restClient.get()
-            .uri("http://authorization:8080/auth/api/permissions/snippetsByAccessType?userId={userId}&accessType={accessType}", userId, accessType)
+            .uri("http://authorization:8080/auth/api/permissions/snippetsByAccessType?userId=" +
+                    "{userId}&accessType={accessType}", userId, accessType)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .retrieve()
             .body(object : org.springframework.core.ParameterizedTypeReference<List<UUID>>() {})

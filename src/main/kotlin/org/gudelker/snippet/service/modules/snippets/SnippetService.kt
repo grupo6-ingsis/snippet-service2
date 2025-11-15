@@ -305,7 +305,7 @@ class SnippetService(
         language: String,
         passedLint: Boolean,
         sortBy: SortByType,
-        direction: DirectionType
+        direction: DirectionType,
     ): Page<Snippet> {
         val userId = jwt.subject
         if (userId.isEmpty()) {
@@ -316,30 +316,37 @@ class SnippetService(
         val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
 
-        val filtered = snippets.filter { snippet ->
-            val passesAllRules = if (userLintRules.isEmpty()) {
-                true
-            } else {
-                userLintRules.all { lintConfig ->
-                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                }
-            }
+        val filtered =
+            snippets.filter { snippet ->
+                val passesAllRules =
+                    if (userLintRules.isEmpty()) {
+                        true
+                    } else {
+                        userLintRules.all { lintConfig ->
+                            lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                        }
+                    }
 
-            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+                (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
                     (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
-        }
-
-        val sorted = when (sortBy) {
-            SortByType.NAME -> filtered.sortedBy { it.title }
-            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
-            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
-                if (userLintRules.isEmpty()) true
-                else userLintRules.all { lintConfig ->
-                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                }
             }
-        }
+
+        val sorted =
+            when (sortBy) {
+                SortByType.NAME -> filtered.sortedBy { it.title }
+                SortByType.LANGUAGE -> filtered.sortedBy { it.language }
+                SortByType.PASSED_LINT ->
+                    filtered.sortedBy { snippet ->
+                        if (userLintRules.isEmpty()) {
+                            true
+                        } else {
+                            userLintRules.all { lintConfig ->
+                                lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                            }
+                        }
+                    }
+            }
 
         val ordered = if (direction == DirectionType.DESC) sorted.reversed() else sorted
 
