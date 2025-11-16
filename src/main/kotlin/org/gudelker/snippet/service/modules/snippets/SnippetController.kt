@@ -169,14 +169,15 @@ class SnippetController(
         }
     }
 
-    @GetMapping
+    @GetMapping("/content/{snippetId}")
     fun getSnippetsContentById(
-        snippetId: String,
+        @PathVariable snippetId: String,
     ): String {
-        val content = assetApiClient.getAsset(
-            container = "snippets",
-            key = snippetId,
-        )
+        val content =
+            assetApiClient.getAsset(
+                container = "snippets",
+                key = snippetId,
+            )
         return content
     }
 }

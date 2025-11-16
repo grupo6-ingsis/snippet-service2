@@ -153,8 +153,9 @@ class SnippetService(
     }
 
     fun getSnippetById(snippetId: String): Snippet {
-        val snippet = snippetRepository.findById(UUID.fromString(snippetId))
-            .orElseThrow { RuntimeException("Snippet not found") }
+        val snippet =
+            snippetRepository.findById(UUID.fromString(snippetId))
+                .orElseThrow { RuntimeException("Snippet not found") }
         // Initialize lazy-loaded relationships to avoid serialization issues
         snippet.languageVersion.language.name
         return snippet
