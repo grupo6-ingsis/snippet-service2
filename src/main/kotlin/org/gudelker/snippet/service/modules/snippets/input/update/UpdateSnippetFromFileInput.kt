@@ -6,5 +6,4 @@ data class UpdateSnippetFromFileInput(
     val snippetId: UUID,
     val title: String?,
     val content: String?,
-    val language: String?,
 )
