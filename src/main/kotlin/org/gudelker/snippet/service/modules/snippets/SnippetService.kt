@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
-import org.gudelker.snippet.service.modules.language.LanguageRepository
+import org.gudelker.snippet.service.modules.langver.LanguageVersionRepository
 import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
@@ -39,7 +39,7 @@ class SnippetService(
     private val assetApiClient: AssetApiClient,
     private val lintConfigService: LintConfigService,
     private val lintResultService: LintResultService,
-    private val languageRepository: LanguageRepository,
+    private val languageVersionRepository: LanguageVersionRepository,
 ) {
     fun getAllSnippets(): List<Snippet> {
         return snippetRepository.findAll()
@@ -64,16 +64,16 @@ class SnippetService(
             ex.printStackTrace()
             throw ex
         }
-        val language =
-            languageRepository.findByName(input.language)
-                ?: throw IllegalArgumentException("Language not found")
+        val languageVersion =
+            languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
+                ?: throw IllegalArgumentException("Language version not found")
+
         val snippet =
             Snippet(
                 ownerId = userId,
                 title = input.title,
-                language = language,
+                languageVersion = languageVersion,
                 description = input.description,
-                snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
             )
@@ -116,9 +116,13 @@ class SnippetService(
 
         input.title?.let { snippet.title = it }
         snippet.updated = OffsetDateTime.now()
-        val language = languageRepository.findByName(snippet.language.name)
-        if (language == null) {
-            throw IllegalArgumentException("Language not found")
+        val languageVersion =
+            languageVersionRepository.findByLanguageNameAndVersion(
+                snippet.languageVersion.language.name,
+                snippet.languageVersion.version,
+            )
+        if (languageVersion == null) {
+            throw IllegalArgumentException("LanguageVersion not found")
         }
 
         snippetRepository.save(snippet)
@@ -127,7 +131,8 @@ class SnippetService(
                 snippetId = snippet.id.toString(),
                 title = snippet.title,
                 content = input.content,
-                language = language,
+                language = languageVersion.language.name,
+                version = languageVersion.version,
                 updated = snippet.updated,
             )
         }
@@ -135,7 +140,8 @@ class SnippetService(
             snippetId = snippet.id.toString(),
             title = snippet.title,
             content = assetApiClient.getAsset("snippets", snippet.id.toString()),
-            language = snippet.language,
+            language = languageVersion.language.name,
+            version = languageVersion.version,
             updated = snippet.updated,
         )
     }
@@ -172,12 +178,11 @@ class SnippetService(
                 ownerId = userId,
                 title = input.title,
                 description = input.description,
-                snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
-                language =
-                    languageRepository.findByName(input.language)
-                        ?: throw IllegalArgumentException("Language not found"),
+                languageVersion =
+                    languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
+                        ?: throw IllegalArgumentException("LanguageVersion not found"),
             )
         val saved = snippetRepository.save(snippet)
 
@@ -201,9 +206,9 @@ class SnippetService(
         input: UpdateSnippetFromEditorInput,
         jwt: Jwt,
     ): UpdateSnippetFromEditorResponse {
-        if (input.title == null && input.content == null && input.description == null && input.version == null) {
+        if (input.title == null && input.content == null && input.description == null) {
             throw IllegalArgumentException(
-                "At least one attribute (title, content, language, description, version) must be provided for update.",
+                "At least one attribute (title, content, language, description) must be provided for update.",
             )
         }
         val snippetId = UUID.fromString(input.snippetId)
@@ -222,11 +227,11 @@ class SnippetService(
             throw ex
         }
 
-        if (input.content != null && input.version != null) {
+        if (input.content != null) {
             val parseRequest =
                 ParseSnippetRequest(
                     snippetContent = input.content,
-                    version = input.version,
+                    version = snippet.languageVersion.version,
                 )
             val parseResult = authApiClient.parseSnippet(parseRequest)
             if (parseResult == ResultType.FAILURE) {
@@ -236,7 +241,6 @@ class SnippetService(
 
         input.title?.let { snippet.title = it }
         input.description?.let { snippet.description = it }
-        input.version?.let { snippet.snippetVersion = it }
         snippet.updated = OffsetDateTime.now()
 
         snippetRepository.save(snippet)
@@ -245,8 +249,8 @@ class SnippetService(
             title = snippet.title,
             description = snippet.description,
             content = input.content,
-            language = snippet.language,
-            version = snippet.snippetVersion.toString(),
+            language = snippet.languageVersion.language.name,
+            version = snippet.languageVersion.version,
             updated = snippet.updated,
         )
     }
@@ -345,7 +349,7 @@ class SnippetService(
                     }
 
                 (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
-                    (language.isEmpty() || snippet.language.name.equals(language, ignoreCase = true)) &&
+                    (language.isEmpty() || snippet.languageVersion.language.name.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
             }
 
@@ -354,7 +358,7 @@ class SnippetService(
         val sorted =
             when (sortBy) {
                 SortByType.NAME -> filtered.sortedBy { it.title }
-                SortByType.LANGUAGE -> filtered.sortedBy { it.language.name }
+                SortByType.LANGUAGE -> filtered.sortedBy { it.languageVersion.language.name }
                 SortByType.PASSED_LINT ->
                     filtered.sortedBy { snippet ->
                         if (userLintRules.isEmpty()) {
