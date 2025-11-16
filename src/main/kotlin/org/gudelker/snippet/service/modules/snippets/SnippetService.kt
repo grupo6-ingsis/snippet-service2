@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.language.LanguageRepository
 import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
@@ -38,6 +39,7 @@ class SnippetService(
     private val assetApiClient: AssetApiClient,
     private val lintConfigService: LintConfigService,
     private val lintResultService: LintResultService,
+    private val languageRepository: LanguageRepository,
 ) {
     fun getAllSnippets(): List<Snippet> {
         return snippetRepository.findAll()
@@ -62,11 +64,14 @@ class SnippetService(
             ex.printStackTrace()
             throw ex
         }
+        val language =
+            languageRepository.findByName(input.language)
+                ?: throw IllegalArgumentException("Language not found")
         val snippet =
             Snippet(
                 ownerId = userId,
                 title = input.title,
-                language = input.language,
+                language = language,
                 description = input.description,
                 snippetVersion = input.version,
                 created = OffsetDateTime.now(),
@@ -97,7 +102,7 @@ class SnippetService(
     }
 
     fun updateSnippetFromFile(input: UpdateSnippetFromFileInput): UpdateSnippetFromFileResponse {
-        if (input.title == null && input.content == null && input.language == null) {
+        if (input.title == null && input.content == null) {
             throw IllegalArgumentException("At least one attribute (title, content, language) must be provided for update.")
         }
         val snippet =
@@ -110,8 +115,11 @@ class SnippetService(
         }
 
         input.title?.let { snippet.title = it }
-        input.language?.let { snippet.language = it }
         snippet.updated = OffsetDateTime.now()
+        val language = languageRepository.findByName(snippet.language.name)
+        if (language == null) {
+            throw IllegalArgumentException("Language not found")
+        }
 
         snippetRepository.save(snippet)
         if (input.content != null) {
@@ -119,7 +127,7 @@ class SnippetService(
                 snippetId = snippet.id.toString(),
                 title = snippet.title,
                 content = input.content,
-                language = snippet.language,
+                language = language,
                 updated = snippet.updated,
             )
         }
@@ -163,11 +171,13 @@ class SnippetService(
             Snippet(
                 ownerId = userId,
                 title = input.title,
-                language = input.language,
                 description = input.description,
                 snippetVersion = input.version,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
+                language =
+                    languageRepository.findByName(input.language)
+                        ?: throw IllegalArgumentException("Language not found"),
             )
         val saved = snippetRepository.save(snippet)
 
@@ -191,7 +201,7 @@ class SnippetService(
         input: UpdateSnippetFromEditorInput,
         jwt: Jwt,
     ): UpdateSnippetFromEditorResponse {
-        if (input.title == null && input.content == null && input.language == null && input.description == null && input.version == null) {
+        if (input.title == null && input.content == null && input.description == null && input.version == null) {
             throw IllegalArgumentException(
                 "At least one attribute (title, content, language, description, version) must be provided for update.",
             )
@@ -226,7 +236,6 @@ class SnippetService(
 
         input.title?.let { snippet.title = it }
         input.description?.let { snippet.description = it }
-        input.language?.let { snippet.language = it }
         input.version?.let { snippet.snippetVersion = it }
         snippet.updated = OffsetDateTime.now()
 
@@ -273,22 +282,6 @@ class SnippetService(
         )
     }
 
-    private fun createSnippet(
-        id: UUID,
-        ownerId: String,
-        input: CreateSnippetFromFileInput,
-    ): Snippet {
-        return Snippet(
-            id = id,
-            ownerId = ownerId,
-            title = input.title,
-            language = input.language,
-            snippetVersion = input.version,
-            created = OffsetDateTime.now(),
-            updated = OffsetDateTime.now(),
-        )
-    }
-
     private fun createSnippetFromFileResponse(
         input: CreateSnippetFromFileInput,
         userId: String,
@@ -305,7 +298,7 @@ class SnippetService(
         language: String,
         passedLint: Boolean,
         sortBy: SortByType,
-        direction: DirectionType
+        direction: DirectionType,
     ): Page<Snippet> {
         val userId = jwt.subject
 
@@ -319,13 +312,14 @@ class SnippetService(
         }
 
         // Llamar al servicio de autorización con el enum convertido a string
-        val snippetIdsByAccessType = try {
-            authApiClient.getSnippetsByAccessType(userId, accessType.name)
-        } catch (e: Exception) {
-            println("❌ Error getting snippets by access type: ${e.message}")
-            e.printStackTrace()
-            emptyList()
-        }
+        val snippetIdsByAccessType =
+            try {
+                authApiClient.getSnippetsByAccessType(userId, accessType.name)
+            } catch (e: Exception) {
+                println("❌ Error getting snippets by access type: ${e.message}")
+                e.printStackTrace()
+                emptyList()
+            }
 
         println("✅ Got ${snippetIdsByAccessType.size} snippet IDs from authorization")
 
@@ -339,32 +333,39 @@ class SnippetService(
 
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
 
-        val filtered = snippets.filter { snippet ->
-            val passesAllRules = if (userLintRules.isEmpty()) {
-                true
-            } else {
-                userLintRules.all { lintConfig ->
-                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                }
-            }
+        val filtered =
+            snippets.filter { snippet ->
+                val passesAllRules =
+                    if (userLintRules.isEmpty()) {
+                        true
+                    } else {
+                        userLintRules.all { lintConfig ->
+                            lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                        }
+                    }
 
-            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
-                    (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
+                (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+                    (language.isEmpty() || snippet.language.name.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
-        }
+            }
 
         println("✅ After filtering: ${filtered.size} snippets")
 
-        val sorted = when (sortBy) {
-            SortByType.NAME -> filtered.sortedBy { it.title }
-            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
-            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
-                if (userLintRules.isEmpty()) true
-                else userLintRules.all { lintConfig ->
-                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                }
+        val sorted =
+            when (sortBy) {
+                SortByType.NAME -> filtered.sortedBy { it.title }
+                SortByType.LANGUAGE -> filtered.sortedBy { it.language.name }
+                SortByType.PASSED_LINT ->
+                    filtered.sortedBy { snippet ->
+                        if (userLintRules.isEmpty()) {
+                            true
+                        } else {
+                            userLintRules.all { lintConfig ->
+                                lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                            }
+                        }
+                    }
             }
-        }
 
         val ordered = if (direction == DirectionType.DESC) sorted.reversed() else sorted
 
