@@ -16,6 +16,7 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -95,14 +96,16 @@ class SnippetController(
     @GetMapping("/get/filter")
     fun getSnippetsByFilter(
         @AuthenticationPrincipal jwt: Jwt,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") pageSize: Int,
         @RequestParam(defaultValue = "ALL") accessType: AccessType,
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
         @RequestParam(defaultValue = "true") passedLint: Boolean,
         @RequestParam(defaultValue = "NAME") sortBy: SortByType,
         @RequestParam(defaultValue = "DESC") direction: DirectionType,
-    ): List<Snippet> {
-        return snippetService.getSnippetsByFilter(jwt, accessType, name, language, passedLint, sortBy, direction)
+    ): Page<Snippet> {
+        return snippetService.getSnippetsByFilter(jwt, page, pageSize, accessType, name, language, passedLint, sortBy, direction)
     }
 
     @GetMapping("/{snippetId}")

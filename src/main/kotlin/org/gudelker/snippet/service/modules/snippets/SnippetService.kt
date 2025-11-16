@@ -20,6 +20,9 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.oauth2.jwt.Jwt
@@ -295,42 +298,80 @@ class SnippetService(
 
     fun getSnippetsByFilter(
         jwt: Jwt,
+        page: Int,
+        pageSize: Int,
         accessType: AccessType,
         name: String,
         language: String,
         passedLint: Boolean,
         sortBy: SortByType,
-        direction: DirectionType,
-    ): List<Snippet> {
+        direction: DirectionType
+    ): Page<Snippet> {
         val userId = jwt.subject
+
+        println("🔍 getSnippetsByFilter called:")
+        println("   userId: $userId")
+        println("   accessType: $accessType (${accessType.name})")
+        println("   page: $page, pageSize: $pageSize")
+
         if (userId.isEmpty()) {
             throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
         }
 
-        val snippetIdsByAccessType = authApiClient.getSnippetsByAccessType(userId, accessType.name)
+        // Llamar al servicio de autorización con el enum convertido a string
+        val snippetIdsByAccessType = try {
+            authApiClient.getSnippetsByAccessType(userId, accessType.name)
+        } catch (e: Exception) {
+            println("❌ Error getting snippets by access type: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+
+        println("✅ Got ${snippetIdsByAccessType.size} snippet IDs from authorization")
+
+        // Si no hay snippets, retornar página vacía
+        if (snippetIdsByAccessType.isEmpty()) {
+            return PageImpl(emptyList(), PageRequest.of(page, pageSize), 0)
+        }
+
         val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
+        println("✅ Found ${snippets.size} snippets in database")
 
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
 
-        val filtered =
-            snippets.filter { snippet ->
-                val passesAllRules = snippetPassesAllRules(snippet, userLintRules, lintResultService)
+        val filtered = snippets.filter { snippet ->
+            val passesAllRules = if (userLintRules.isEmpty()) {
+                true
+            } else {
+                userLintRules.all { lintConfig ->
+                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                }
+            }
 
-                (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
+            (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
                     (language.isEmpty() || snippet.language.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
-            }
+        }
 
-        val sorted =
-            when (sortBy) {
-                SortByType.NAME -> filtered.sortedBy { it.title }
-                SortByType.LANGUAGE -> filtered.sortedBy { it.language }
-                SortByType.PASSED_LINT ->
-                    filtered.sortedBy { snippet ->
-                        snippetPassesAllRules(snippet, userLintRules, lintResultService)
-                    }
-            }
+        println("✅ After filtering: ${filtered.size} snippets")
 
-        return if (direction == DirectionType.DESC) sorted.reversed() else sorted
+        val sorted = when (sortBy) {
+            SortByType.NAME -> filtered.sortedBy { it.title }
+            SortByType.LANGUAGE -> filtered.sortedBy { it.language }
+            SortByType.PASSED_LINT -> filtered.sortedBy { snippet ->
+                if (userLintRules.isEmpty()) true
+                else userLintRules.all { lintConfig ->
+                    lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
+                }
+            }
+        }
+
+        val ordered = if (direction == DirectionType.DESC) sorted.reversed() else sorted
+
+        val start = page * pageSize
+        val end = minOf(start + pageSize, ordered.size)
+        val paginatedContent = if (start < ordered.size) ordered.subList(start, end) else emptyList()
+
+        return PageImpl(paginatedContent, PageRequest.of(page, pageSize), ordered.size.toLong())
     }
 }
