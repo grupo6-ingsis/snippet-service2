@@ -42,7 +42,10 @@ class SnippetService(
     private val languageVersionRepository: LanguageVersionRepository,
 ) {
     fun getAllSnippets(): List<Snippet> {
-        return snippetRepository.findAll()
+        val snippets = snippetRepository.findAll()
+        // Initialize lazy-loaded relationships to avoid serialization issues
+        snippets.forEach { it.languageVersion.language.name }
+        return snippets
     }
 
     fun createSnippetFromFile(
@@ -98,7 +101,10 @@ class SnippetService(
     }
 
     fun getSnippetsByUserId(userId: String): List<Snippet> {
-        return snippetRepository.findByOwnerId(userId)
+        val snippets = snippetRepository.findByOwnerId(userId)
+        // Initialize lazy-loaded relationships to avoid serialization issues
+        snippets.forEach { it.languageVersion.language.name }
+        return snippets
     }
 
     fun updateSnippetFromFile(input: UpdateSnippetFromFileInput): UpdateSnippetFromFileResponse {
@@ -147,8 +153,11 @@ class SnippetService(
     }
 
     fun getSnippetById(snippetId: String): Snippet {
-        return snippetRepository.findById(UUID.fromString(snippetId))
+        val snippet = snippetRepository.findById(UUID.fromString(snippetId))
             .orElseThrow { RuntimeException("Snippet not found") }
+        // Initialize lazy-loaded relationships to avoid serialization issues
+        snippet.languageVersion.language.name
+        return snippet
     }
 
     @Transactional
