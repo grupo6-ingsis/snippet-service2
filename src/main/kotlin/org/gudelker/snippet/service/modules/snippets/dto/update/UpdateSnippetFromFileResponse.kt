@@ -7,5 +7,6 @@ data class UpdateSnippetFromFileResponse(
     val title: String,
     val content: String,
     val language: String,
+    val version: String,
     val updated: OffsetDateTime,
 )

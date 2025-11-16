@@ -46,7 +46,7 @@ class SnippetController(
         return snippetService.getAllSnippets()
     }
 
-    @PostMapping("/create")
+    @PostMapping("")
     fun createSnippet(
         @RequestBody input: CreateSnippetFromEditor,
         @AuthenticationPrincipal jwt: Jwt,
@@ -74,7 +74,7 @@ class SnippetController(
         )
     }
 
-    @PutMapping("/update")
+    @PutMapping("")
     fun updateSnippetFromEditor(
         @RequestBody @Valid input: UpdateSnippetFromEditorInput,
         @AuthenticationPrincipal jwt: Jwt,
@@ -93,7 +93,7 @@ class SnippetController(
         return snippetService.getSnippetsByUserId(userId)
     }
 
-    @GetMapping("/get/filter")
+    @GetMapping("/paginated")
     fun getSnippetsByFilter(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestParam(defaultValue = "0") page: Int,
@@ -166,37 +166,6 @@ class SnippetController(
             println("Error sharing snippet: ${e.message}")
             e.printStackTrace()
             ResponseEntity.status(500).build()
-        }
-    }
-
-    @GetMapping("/test")
-    fun bucketTest() {
-        val container = "test-container"
-        val key = "test-key"
-        val content = "This is a test content."
-
-        try {
-            println("🚀 Creating asset: $container/$key")
-            assetApiClient.createAsset(container, key, content)
-            println("✅ Asset created successfully")
-        } catch (e: Exception) {
-            println("❌ Error creating asset: ${e.message}")
-            e.printStackTrace()
-        }
-    }
-
-    @GetMapping("/test/get/snippet/{snippetId}")
-    fun bucketTest2(
-        @PathVariable snippetId: String,
-    ): String {
-        return try {
-            val response = assetApiClient.getAsset("snippets", snippetId)
-            println("✅ Asset fetched successfully: $response")
-            response
-        } catch (e: Exception) {
-            println("❌ Error fetching asset: ${e.message}")
-            e.printStackTrace()
-            "Error fetching asset: ${e.message}"
         }
     }
 }

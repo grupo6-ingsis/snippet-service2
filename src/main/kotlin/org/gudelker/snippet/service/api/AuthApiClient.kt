@@ -79,20 +79,21 @@ class AuthApiClient(
         println("🔍 UserId: $userId, AccessType: $accessType")
 
         return try {
-            val response = restClient.get()
-                .uri { uriBuilder ->
-                    uriBuilder
-                        .scheme("http")
-                        .host("authorization")
-                        .port(8080)
-                        .path("/api/permissions/snippetsByAccessType")
-                        .queryParam("userId", userId)
-                        .queryParam("accessType", accessType)
-                        .build()
-                }
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
-                .retrieve()
-                .body(object : ParameterizedTypeReference<List<UUID>>() {})
+            val response =
+                restClient.get()
+                    .uri { uriBuilder ->
+                        uriBuilder
+                            .scheme("http")
+                            .host("authorization")
+                            .port(8080)
+                            .path("/api/permissions/snippetsByAccessType")
+                            .queryParam("userId", userId)
+                            .queryParam("accessType", accessType)
+                            .build()
+                    }
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+                    .retrieve()
+                    .body(object : ParameterizedTypeReference<List<UUID>>() {})
 
             println("✅ Got ${response?.size ?: 0} snippets from authorization")
             response ?: emptyList()

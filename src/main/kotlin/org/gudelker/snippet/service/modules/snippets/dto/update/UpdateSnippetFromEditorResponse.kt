@@ -9,7 +9,7 @@ data class UpdateSnippetFromEditorResponse(
     val title: String?,
     val description: String?,
     val content: String?,
-    val language: String?,
-    val version: String?,
+    val language: String,
+    val version: String,
     val updated: OffsetDateTime,
 )
