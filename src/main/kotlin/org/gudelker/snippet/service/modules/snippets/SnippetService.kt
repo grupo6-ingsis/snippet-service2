@@ -199,7 +199,9 @@ class SnippetService(
         } catch (ex: Exception) {
             throw RuntimeException("Failed to save content", ex)
         }
-        return snippet
+        // Initialize lazy-loaded relationships to avoid serialization issues
+        saved.languageVersion.language.name
+        return saved
     }
 
     fun updateSnippetFromEditor(
