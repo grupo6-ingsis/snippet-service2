@@ -4,6 +4,7 @@ import org.gudelker.snippet.service.modules.language.LanguageRepository
 import org.gudelker.snippet.service.modules.langver.dto.LanguageVersionDto
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -13,7 +14,9 @@ class LanguageVersionController(
     private val languageRepository: LanguageRepository,
 ) {
     @GetMapping("/supported")
-    fun getSupportedLanguageVersions(languageName: String): List<LanguageVersionDto> {
+    fun getSupportedLanguageVersions(
+        @RequestParam languageName: String,
+    ): List<LanguageVersionDto> {
         val language =
             languageRepository.findByName(languageName)
                 ?: return emptyList()
