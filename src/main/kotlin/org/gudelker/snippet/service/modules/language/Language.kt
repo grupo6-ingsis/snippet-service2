@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.language
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -8,6 +9,7 @@ import org.hibernate.annotations.UuidGenerator
 import java.util.UUID
 
 @Entity
+@JsonIgnoreProperties(value = ["hibernateLazyInitializer", "handler"], ignoreUnknown = true)
 class Language {
     @Id
     @GeneratedValue(generator = "UUID")

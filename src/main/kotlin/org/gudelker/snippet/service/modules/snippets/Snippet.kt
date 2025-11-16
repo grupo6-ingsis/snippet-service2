@@ -1,6 +1,7 @@
 // src/main/kotlin/org/gudelker/snippet/service/modules/snippets/Snippet.kt
 package org.gudelker.snippet.service.modules.snippets
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -15,6 +16,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
+@JsonIgnoreProperties(value = ["hibernateLazyInitializer", "handler"], ignoreUnknown = true)
 class Snippet(
     @Id
     @GeneratedValue(generator = "UUID")
