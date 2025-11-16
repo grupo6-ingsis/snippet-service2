@@ -16,17 +16,15 @@ class LanguageVersionController(
     @GetMapping("/supported")
     fun getSupportedLanguageVersions(
         @RequestParam languageName: String,
-    ): List<LanguageVersionDto> {
+    ): LanguageVersionDto {
         val language =
             languageRepository.findByName(languageName)
-                ?: return emptyList()
+                ?: throw IllegalArgumentException("Language '$languageName' not found")
         val versions = languageVersionRepository.findByLanguageName(languageName)
         return LanguageVersionDto(
             languageName = languageName,
             versions = versions.map { it.version },
             extension = language.extension,
-        ).let {
-            listOf(it)
-        }
+        )
     }
 }
