@@ -168,4 +168,15 @@ class SnippetController(
             ResponseEntity.status(500).build()
         }
     }
+
+    @GetMapping
+    fun getSnippetsContentById(
+        snippetId: String,
+    ): String {
+        val content = assetApiClient.getAsset(
+            container = "snippets",
+            key = snippetId,
+        )
+        return content
+    }
 }
