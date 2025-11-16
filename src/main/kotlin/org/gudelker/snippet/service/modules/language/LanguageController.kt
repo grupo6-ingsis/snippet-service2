@@ -1,10 +1,12 @@
 package org.gudelker.snippet.service.modules.language
 
 import org.gudelker.snippet.service.modules.language.dto.LanguageWithExtensionDto
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Controller("language")
+@RestController
+@RequestMapping("/language")
 class LanguageController(
     private val languageRepository: LanguageRepository,
 ) {
