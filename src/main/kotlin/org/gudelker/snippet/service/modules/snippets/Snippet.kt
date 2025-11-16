@@ -8,6 +8,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
+import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import org.gudelker.snippet.service.modules.langver.LanguageVersion
 import org.gudelker.snippet.service.modules.lintresult.LintResult
@@ -35,6 +36,6 @@ class Snippet(
     var updated: OffsetDateTime = OffsetDateTime.now(),
     @OneToOne(mappedBy = "snippet", cascade = [CascadeType.ALL], orphanRemoval = true)
     var lintResult: LintResult? = null,
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     var languageVersion: LanguageVersion,
 )
