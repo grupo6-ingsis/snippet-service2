@@ -29,10 +29,11 @@ class LintConfigService(
 
     fun deactivateRule(
         userId: String,
-        lintRuleId: UUID,
+        lintRuleId: String,
     ) {
+        val ruleId = UUID.fromString(lintRuleId)
         val config =
-            lintConfigRepository.findByUserIdAndLintRuleId(userId, lintRuleId)
+            lintConfigRepository.findByUserIdAndLintRuleId(userId, ruleId)
                 ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
         lintConfigRepository.delete(config)
     }
