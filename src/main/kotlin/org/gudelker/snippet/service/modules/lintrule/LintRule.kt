@@ -19,4 +19,7 @@ class LintRule {
 
     @Column(nullable = false)
     var description: String = ""
+
+    @Column(nullable = false)
+    var hasValue: Boolean = false
 }
