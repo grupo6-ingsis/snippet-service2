@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import org.gudelker.snippet.service.modules.lintrule.LintRule
 import org.gudelker.snippet.service.modules.snippets.Snippet
+import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.hibernate.annotations.UuidGenerator
 import java.util.UUID
 
@@ -28,7 +29,7 @@ class LintResult {
     var lintRule: LintRule? = null
 
     @Column(nullable = false)
-    var passed: Boolean = false
+    var complianceType: ComplianceType = ComplianceType.PENDING
 
     @Column(nullable = false)
     var line: Int = 0

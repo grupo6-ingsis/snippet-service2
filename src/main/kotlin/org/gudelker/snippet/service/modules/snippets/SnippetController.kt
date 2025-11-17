@@ -5,6 +5,7 @@ import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
+import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
@@ -112,7 +113,7 @@ class SnippetController(
     fun getSnippetById(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<Snippet> {
+    ): ResponseEntity<SnippetContentDto> {
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
         println(token)
@@ -135,8 +136,13 @@ class SnippetController(
             }
 
             val snippet = snippetService.getSnippetById(snippetId)
+            val content =
+                assetApiClient.getAsset(
+                    container = "snippets",
+                    key = snippetId,
+                )
 
-            return ResponseEntity.ok(snippet)
+            return ResponseEntity.ok(SnippetContentDto(content, snippet))
         } catch (e: Exception) {
             println("Error calling authorization service: ${e.message}")
             e.printStackTrace()
@@ -168,16 +174,4 @@ class SnippetController(
             ResponseEntity.status(500).build()
         }
     }
-
-    @GetMapping
-    fun getSnippetsContentById(
-        snippetId: String,
-    ): String {
-        val content = assetApiClient.getAsset(
-            container = "snippets",
-            key = snippetId,
-        )
-        return content
-    }
-
 }

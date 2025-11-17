@@ -16,3 +16,10 @@ enum class SortByType {
     LANGUAGE,
     PASSED_LINT,
 }
+
+enum class ComplianceType {
+    COMPLIANT,
+    NON_COMPLIANT,
+    FAILED,
+    PENDING,
+}

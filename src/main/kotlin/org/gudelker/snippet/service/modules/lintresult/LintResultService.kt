@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.lintresult
 
+import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.springframework.stereotype.Service
 
 @Service
@@ -14,6 +15,6 @@ class LintResultService(
             lintResultRepository.findAll().filter {
                 it.snippet?.id.toString() == snippetId && it.lintRule?.id.toString() == lintRuleId
             }
-        return result.all { it.passed }
+        return result.all { it.complianceType == ComplianceType.COMPLIANT }
     }
 }
