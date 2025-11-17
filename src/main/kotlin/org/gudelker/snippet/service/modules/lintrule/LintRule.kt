@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.lintrule
 
 import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
@@ -22,4 +23,7 @@ class LintRule {
 
     @Column(nullable = false)
     var hasValue: Boolean = false
+
+    @ElementCollection
+    var valueOptions: List<String> = emptyList()
 }

@@ -11,29 +11,48 @@ class LintRuleSeeder(
 ) {
     @PostConstruct
     fun seed() {
+        val rulesConfig =
+            listOf(
+                Triple(
+                    "identifierFormat",
+                    "Ensures that identifiers follow a specific format, such as snake_case or camelCase.",
+                    listOf("camelCase", "snake_case"),
+                ),
+                Triple(
+                    "restrictPrintlnToIdentifierOrLiteral",
+                    "Restricts the use of `println` to only accept identifiers or string literals, preventing dynamic or unsafe expressions.",
+                    emptyList(),
+                ),
+                Triple(
+                    "restrictReadInputToIdentifierOrLiteral",
+                    "Restricts the use of `readInput` to only accept identifiers or string literals, ensuring controlled input handling.",
+                    emptyList(),
+                ),
+            )
+
         if (lintRuleRepository.count() == 0L) {
+            // Create new rules
             val rules =
-                listOf(
+                rulesConfig.map { (name, description, options) ->
                     LintRule().apply {
-                        name = "identifierFormat"
-                        description = "Ensures that identifiers follow a specific format, " +
-                            "such as snake_case or camelCase."
-                        hasValue = true
-                    },
-                    LintRule().apply {
-                        name = "restrictPrintlnToIdentifierOrLiteral"
-                        description = "Restricts the use of `println` to only " +
-                            "accept identifiers or string literals, preventing dynamic or unsafe expressions."
-                        hasValue = false
-                    },
-                    LintRule().apply {
-                        name = "restrictReadInputToIdentifierOrLiteral"
-                        description = "Restricts the use of `readInput` to only accept identifiers " +
-                            "or string literals, ensuring controlled input handling."
-                        hasValue = false
-                    },
-                )
+                        this.name = name
+                        this.description = description
+                        this.hasValue = options.isNotEmpty()
+                        this.valueOptions = options
+                    }
+                }
             lintRuleRepository.saveAll(rules)
+        } else {
+            // Update existing rules with valueOptions
+            rulesConfig.forEach { (name, description, options) ->
+                val existingRule = lintRuleRepository.findByName(name).firstOrNull()
+                if (existingRule != null) {
+                    existingRule.valueOptions = options
+                    existingRule.description = description
+                    existingRule.hasValue = options.isNotEmpty()
+                    lintRuleRepository.save(existingRule)
+                }
+            }
         }
     }
 }
