@@ -7,8 +7,10 @@ import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.langver.LanguageVersionRepository
 import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.lintresult.LintResultService
+import org.gudelker.snippet.service.modules.lintrule.LintRuleRepository
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
@@ -21,6 +23,8 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
+import org.gudelker.snippet.service.redis.LintPublisher
+import org.gudelker.snippet.service.redis.LintRequest
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -38,8 +42,11 @@ class SnippetService(
     private val authApiClient: AuthApiClient,
     private val assetApiClient: AssetApiClient,
     private val lintConfigService: LintConfigService,
+    private val lintRuleRepository: LintRuleRepository,
     private val lintResultService: LintResultService,
     private val languageVersionRepository: LanguageVersionRepository,
+    private val lintPublisher: LintPublisher
+
 ) {
     fun getAllSnippets(): List<Snippet> {
         val snippets = snippetRepository.findAll()
@@ -378,5 +385,37 @@ class SnippetService(
         val paginatedContent = if (start < ordered.size) ordered.subList(start, end) else emptyList()
 
         return PageImpl(paginatedContent, PageRequest.of(page, pageSize), ordered.size.toLong())
+    }
+
+    fun lintUserSnippets(userId: String) {
+        val snippetsIds = snippetRepository.findByOwnerId(userId).mapNotNull { it.id }
+        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
+        val rulesWithValue = userLintRules.map { lintConfig ->
+            RuleNameWithValue(
+                ruleName = lintConfig.lintRule?.name ?: "",
+                value = lintConfig.ruleValue ?: ""
+            )
+        }
+        lintSnippets(snippetsIds, rulesWithValue)
+    }
+
+    private fun lintSnippets(snippetIds: List<UUID>, lintRules: List<RuleNameWithValue>) {
+        val defaultLintRules = lintRuleRepository.findAll()
+        val lintRulesNames = defaultLintRules.map { it.name }
+        for (snippetId in snippetIds) {
+            try {
+                val snippet = snippetRepository.findById(snippetId)
+                val version = snippet.get().languageVersion.version
+                    val req = LintRequest(
+                        snippetId = snippetId.toString(),
+                        snippetVersion = version,
+                        userRules = lintRules,
+                        allRules = lintRulesNames
+                    )
+                    lintPublisher.publishLintRequest(req)
+            } catch (err: Exception) {
+                throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
+            }
+        }
     }
 }
