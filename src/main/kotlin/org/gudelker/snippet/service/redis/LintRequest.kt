@@ -7,5 +7,5 @@ data class LintRequest(
     val snippetVersion: String,
     val userRules: List<RuleNameWithValue>,
     val allRules: List<String>,
-    val requestedAt: Long = System.currentTimeMillis()
+    val requestedAt: Long = System.currentTimeMillis(),
 )
