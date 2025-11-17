@@ -223,13 +223,14 @@ class SnippetService(
     fun updateSnippetFromEditor(
         input: UpdateSnippetFromEditorInput,
         jwt: Jwt,
+        snippetId: String
     ): UpdateSnippetFromEditorResponse {
         if (input.title == null && input.content == null && input.description == null) {
             throw IllegalArgumentException(
                 "At least one attribute (title, content, language, description) must be provided for update.",
             )
         }
-        val snippetId = UUID.fromString(input.snippetId)
+        val snippetId = UUID.fromString(snippetId)
         val snippet =
             snippetRepository.findById(snippetId)
                 .orElseThrow { RuntimeException("Snippet not found") }

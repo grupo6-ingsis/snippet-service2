@@ -4,7 +4,6 @@ package org.gudelker.snippet.service.modules.snippets.input.update
 // description se incluye porque está en el input de editor
 
 data class UpdateSnippetFromEditorInput(
-    val snippetId: String,
     val title: String? = null,
     val description: String? = null,
     val content: String? = null,
