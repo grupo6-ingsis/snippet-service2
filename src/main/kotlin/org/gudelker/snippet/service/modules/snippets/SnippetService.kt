@@ -45,8 +45,7 @@ class SnippetService(
     private val lintRuleRepository: LintRuleRepository,
     private val lintResultService: LintResultService,
     private val languageVersionRepository: LanguageVersionRepository,
-    private val lintPublisher: LintPublisher
-
+    private val lintPublisher: LintPublisher,
 ) {
     fun getAllSnippets(): List<Snippet> {
         val snippets = snippetRepository.findAll()
@@ -390,29 +389,34 @@ class SnippetService(
     fun lintUserSnippets(userId: String) {
         val snippetsIds = snippetRepository.findByOwnerId(userId).mapNotNull { it.id }
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
-        val rulesWithValue = userLintRules.map { lintConfig ->
-            RuleNameWithValue(
-                ruleName = lintConfig.lintRule?.name ?: "",
-                value = lintConfig.ruleValue ?: ""
-            )
-        }
+        val rulesWithValue =
+            userLintRules.map { lintConfig ->
+                RuleNameWithValue(
+                    ruleName = lintConfig.lintRule?.name ?: "",
+                    value = lintConfig.ruleValue ?: "",
+                )
+            }
         lintSnippets(snippetsIds, rulesWithValue)
     }
 
-    private fun lintSnippets(snippetIds: List<UUID>, lintRules: List<RuleNameWithValue>) {
+    private fun lintSnippets(
+        snippetIds: List<UUID>,
+        lintRules: List<RuleNameWithValue>,
+    ) {
         val defaultLintRules = lintRuleRepository.findAll()
         val lintRulesNames = defaultLintRules.map { it.name }
         for (snippetId in snippetIds) {
             try {
                 val snippet = snippetRepository.findById(snippetId)
                 val version = snippet.get().languageVersion.version
-                    val req = LintRequest(
+                val req =
+                    LintRequest(
                         snippetId = snippetId.toString(),
                         snippetVersion = version,
                         userRules = lintRules,
-                        allRules = lintRulesNames
+                        allRules = lintRulesNames,
                     )
-                    lintPublisher.publishLintRequest(req)
+                lintPublisher.publishLintRequest(req)
             } catch (err: Exception) {
                 throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
             }
