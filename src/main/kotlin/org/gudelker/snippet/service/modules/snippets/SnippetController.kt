@@ -174,4 +174,11 @@ class SnippetController(
             ResponseEntity.status(500).build()
         }
     }
+
+    @PostMapping("/lint")
+    fun lintSnippet(
+        @AuthenticationPrincipal jwt: Jwt,
+    ) {
+        return snippetService.lintUserSnippets(jwt.subject)
+    }
 }
