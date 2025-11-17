@@ -4,5 +4,5 @@ data class ActivateRuleRequest(
     val id: String,
     val name: String,
     val isActive: Boolean,
-    val ruleValue: String,
+    val ruleValue: String?,
 )
