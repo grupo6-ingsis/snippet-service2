@@ -18,16 +18,19 @@ class LintRuleSeeder(
                         name = "identifierFormat"
                         description = "Ensures that identifiers follow a specific format, " +
                             "such as snake_case or camelCase."
+                        hasValue = true
                     },
                     LintRule().apply {
                         name = "restrictPrintlnToIdentifierOrLiteral"
                         description = "Restricts the use of `println` to only " +
                             "accept identifiers or string literals, preventing dynamic or unsafe expressions."
+                        hasValue = false
                     },
                     LintRule().apply {
                         name = "restrictReadInputToIdentifierOrLiteral"
                         description = "Restricts the use of `readInput` to only accept identifiers " +
                             "or string literals, ensuring controlled input handling."
+                        hasValue = false
                     },
                 )
             lintRuleRepository.saveAll(rules)
