@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.lintconfig
 
 import org.gudelker.snippet.service.modules.lintconfig.input.ActivateRuleRequest
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +24,12 @@ class LintConfigController(private val lintConfigService: LintConfigService) {
     fun modifyRule(
         @RequestBody request: ActivateRuleRequest,
         @AuthenticationPrincipal jwt: Jwt,
-    ): LintConfig? {
-        return lintConfigService.modifyRule(request, jwt.subject)
+    ): ResponseEntity<LintConfig> {
+        val result = lintConfigService.modifyRule(request, jwt.subject)
+        return if (result != null) {
+            ResponseEntity.ok(result)
+        } else {
+            ResponseEntity.noContent().build()
+        }
     }
 }
