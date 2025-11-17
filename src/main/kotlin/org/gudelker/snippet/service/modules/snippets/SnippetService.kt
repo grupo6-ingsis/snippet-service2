@@ -408,6 +408,29 @@ class SnippetService(
         lintSnippets(snippetsIds, rulesWithValue)
     }
 
+    @Transactional
+    fun deleteSnippet(
+        snippetId: String,
+        userId: String,
+    ) {
+        val snippetUUID = UUID.fromString(snippetId)
+        val snippet =
+            snippetRepository.findById(snippetUUID)
+                .orElseThrow { IllegalArgumentException("Snippet not found") }
+
+        if (snippet.ownerId != userId) {
+            throw AccessDeniedException("Only the owner can delete the snippet")
+        }
+
+        try {
+            assetApiClient.deleteAsset("snippets", snippetId)
+        } catch (ex: Exception) {
+            println("Warning: Failed to delete asset: ${ex.message}")
+        }
+
+        snippetRepository.delete(snippet)
+    }
+
     private fun lintSnippets(
         snippetIds: List<UUID>,
         lintRules: List<RuleNameWithValue>,
