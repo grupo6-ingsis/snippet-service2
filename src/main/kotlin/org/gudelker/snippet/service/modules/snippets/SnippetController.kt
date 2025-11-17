@@ -75,14 +75,16 @@ class SnippetController(
         )
     }
 
-    @PutMapping("")
+    @PutMapping("/{snippetId}")
     fun updateSnippetFromEditor(
         @RequestBody @Valid input: UpdateSnippetFromEditorInput,
+        @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): UpdateSnippetFromEditorResponse {
         return snippetService.updateSnippetFromEditor(
             input = input,
             jwt = jwt,
+            snippetId
         )
     }
 
