@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.redis
+package org.gudelker.snippet.service.redis.dto
 
 import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 

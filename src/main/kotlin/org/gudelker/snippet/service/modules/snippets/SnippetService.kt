@@ -23,8 +23,9 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.gudelker.snippet.service.redis.LintPublisher
-import org.gudelker.snippet.service.redis.LintRequest
+import org.gudelker.snippet.service.redis.producer.LintPublisher
+import org.gudelker.snippet.service.redis.dto.LintRequest
+import org.gudelker.snippet.service.redis.dto.LintResultRequest
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -201,12 +202,10 @@ class SnippetService(
                         ?: throw IllegalArgumentException("LanguageVersion not found"),
             )
         val saved = snippetRepository.save(snippet)
-
+        val snippetId = saved.id
+            ?: throw RuntimeException("Failed to save snippet")
         try {
-            if (saved.id == null) {
-                throw RuntimeException("Failed to save snippet")
-            }
-            authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
+            authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         } catch (ex: Exception) {
             throw RuntimeException("Authorization failed", ex)
         }
@@ -215,6 +214,9 @@ class SnippetService(
         } catch (ex: Exception) {
             throw RuntimeException("Failed to save content", ex)
         }
+
+        lintSingleSnippet(snippetId,userId)
+
         // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
         return saved
@@ -453,5 +455,23 @@ class SnippetService(
                 throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
             }
         }
+    }
+
+    private fun lintSingleSnippet(snippetId: UUID, userId: String) {
+        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
+        val rulesWithValue =
+            userLintRules.map { lintConfig ->
+                RuleNameWithValue(
+                    ruleName = lintConfig.lintRule?.name ?: "",
+                    value = lintConfig.ruleValue ?: "",
+                )
+            }
+        lintSnippets(listOf(snippetId), rulesWithValue)
+    }
+
+    fun updateLintResult(snippetId: String, results: List<LintResultRequest>) {
+        val snippet = snippetRepository.findById(UUID.fromString(snippetId))
+
+
     }
 }

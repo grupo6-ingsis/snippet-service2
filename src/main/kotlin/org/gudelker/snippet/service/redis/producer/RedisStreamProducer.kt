@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.redis
+package org.gudelker.snippet.service.redis.producer
 
 import org.springframework.data.redis.connection.stream.RecordId
 import org.springframework.data.redis.connection.stream.StreamRecords

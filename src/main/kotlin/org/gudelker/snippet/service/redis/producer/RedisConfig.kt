@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.redis
+package org.gudelker.snippet.service.redis.producer
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
