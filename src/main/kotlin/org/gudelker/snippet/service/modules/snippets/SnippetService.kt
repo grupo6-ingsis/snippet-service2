@@ -223,7 +223,7 @@ class SnippetService(
     fun updateSnippetFromEditor(
         input: UpdateSnippetFromEditorInput,
         jwt: Jwt,
-        snippetId: String
+        snippetId: String,
     ): UpdateSnippetFromEditorResponse {
         if (input.title == null && input.content == null && input.description == null) {
             throw IllegalArgumentException(

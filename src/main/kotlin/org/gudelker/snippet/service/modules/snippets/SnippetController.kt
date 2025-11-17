@@ -84,7 +84,7 @@ class SnippetController(
         return snippetService.updateSnippetFromEditor(
             input = input,
             jwt = jwt,
-            snippetId
+            snippetId,
         )
     }
 
