@@ -16,7 +16,7 @@ class LintRuleSeeder(
                 Triple(
                     "identifierFormat",
                     "Ensures that identifiers follow a specific format, such as snake_case or camelCase.",
-                    listOf("camelCase", "snake_case"),
+                    listOf("camelCase", "snakeCase"),
                 ),
                 Triple(
                     "restrictPrintlnToIdentifierOrLiteral",
