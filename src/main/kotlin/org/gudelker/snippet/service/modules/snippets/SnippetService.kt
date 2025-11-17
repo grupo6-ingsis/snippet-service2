@@ -318,11 +318,6 @@ class SnippetService(
     ): Page<Snippet> {
         val userId = jwt.subject
 
-        println("🔍 getSnippetsByFilter called:")
-        println("   userId: $userId")
-        println("   accessType: $accessType (${accessType.name})")
-        println("   page: $page, pageSize: $pageSize")
-
         if (userId.isEmpty()) {
             throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
         }
@@ -332,20 +327,15 @@ class SnippetService(
             try {
                 authApiClient.getSnippetsByAccessType(userId, accessType.name)
             } catch (e: Exception) {
-                println("❌ Error getting snippets by access type: ${e.message}")
                 e.printStackTrace()
                 emptyList()
             }
 
-        println("✅ Got ${snippetIdsByAccessType.size} snippet IDs from authorization")
-
-        // Si no hay snippets, retornar página vacía
         if (snippetIdsByAccessType.isEmpty()) {
             return PageImpl(emptyList(), PageRequest.of(page, pageSize), 0)
         }
 
         val snippets = snippetRepository.findAllById(snippetIdsByAccessType)
-        println("✅ Found ${snippets.size} snippets in database")
 
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
 
@@ -364,8 +354,6 @@ class SnippetService(
                     (language.isEmpty() || snippet.languageVersion.language.name.equals(language, ignoreCase = true)) &&
                     (!passedLint || passesAllRules)
             }
-
-        println("✅ After filtering: ${filtered.size} snippets")
 
         val sorted =
             when (sortBy) {
