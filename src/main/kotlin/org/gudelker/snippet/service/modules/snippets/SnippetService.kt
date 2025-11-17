@@ -263,6 +263,14 @@ class SnippetService(
         snippet.updated = OffsetDateTime.now()
 
         snippetRepository.save(snippet)
+        
+        if (input.content != null) {
+            try {
+                assetApiClient.updateAsset("snippets", snippetId.toString(), input.content)
+            } catch (ex: Exception) {
+                throw RuntimeException("Failed to update content", ex)
+            }
+        }
         return UpdateSnippetFromEditorResponse(
             snippetId = snippet.id.toString(),
             title = snippet.title,

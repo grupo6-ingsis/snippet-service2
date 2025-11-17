@@ -23,6 +23,19 @@ class AssetApiClient(
             .toBodilessEntity()
     }
 
+    fun updateAsset(
+        container: String,
+        key: String,
+        content: String,
+    ) {
+        restClient.put()
+            .uri("$baseUrl/{container}/{key}", container, key)
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(content)
+            .retrieve()
+            .toBodilessEntity()
+    }
+
     fun getAsset(
         container: String,
         key: String,
