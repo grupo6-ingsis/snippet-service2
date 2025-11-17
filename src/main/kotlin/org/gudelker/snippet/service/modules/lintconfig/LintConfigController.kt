@@ -32,9 +32,9 @@ class LintConfigController(private val lintConfigService: LintConfigService) {
 
     @DeleteMapping
     fun deactivateRule(
-        @RequestParam userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
         @RequestParam lintRuleId: UUID,
     ) {
-        lintConfigService.deactivateRule(userId, lintRuleId)
+        lintConfigService.deactivateRule(jwt.subject, lintRuleId)
     }
 }
