@@ -1,16 +1,19 @@
 package org.gudelker.snippet.service.modules.lintresult
 
+import jakarta.persistence.CollectionTable
 import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
-import org.gudelker.snippet.service.modules.lintrule.LintRule
 import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.hibernate.annotations.UuidGenerator
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity
@@ -21,22 +24,29 @@ class LintResult {
     var id: UUID? = null
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "snippet_id", nullable = false)
+    @JoinColumn(name = "snippet_id", nullable = false, unique = true)
     var snippet: Snippet? = null
-
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "lint_rule_id", nullable = false)
-    var lintRule: LintRule? = null
 
     @Column(nullable = false)
     var complianceType: ComplianceType = ComplianceType.PENDING
 
     @Column(nullable = false)
-    var line: Int = 0
+    var lintedAt: LocalDateTime = LocalDateTime.now()
 
-    @Column(nullable = false)
-    var columnNumber: Int = 0
-
-    @Column
-    var message: String? = null
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "lint_result_errors", joinColumns = [JoinColumn(name = "lint_result_id")])
+    var errors: MutableList<LintError> = mutableListOf()
 }
+
+@Embeddable
+data class LintError(
+    @Column(nullable = false)
+    var message: String = "",
+    
+    @Column(nullable = false)
+    var line: Int = 0,
+    
+    @Column(nullable = false, name = "column_number")
+    var columnNumber: Int = 0,
+)
+

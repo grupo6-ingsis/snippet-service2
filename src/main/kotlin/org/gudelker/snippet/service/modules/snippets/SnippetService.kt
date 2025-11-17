@@ -15,6 +15,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.authorization.Authorize
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
@@ -86,6 +87,7 @@ class SnippetService(
                 description = input.description,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
+                complianceType = ComplianceType.PENDING
             )
         val saved = snippetRepository.save(snippet)
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
@@ -93,7 +95,6 @@ class SnippetService(
         try {
             if (saved.id == null) {
                 throw RuntimeException("Failed to save snippet")
-                println("Hola")
             }
             authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
         } catch (ex: Exception) {
@@ -200,6 +201,7 @@ class SnippetService(
                 languageVersion =
                     languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
                         ?: throw IllegalArgumentException("LanguageVersion not found"),
+                complianceType = ComplianceType.PENDING
             )
         val saved = snippetRepository.save(snippet)
         val snippetId = saved.id
@@ -362,9 +364,7 @@ class SnippetService(
                     if (userLintRules.isEmpty()) {
                         true
                     } else {
-                        userLintRules.all { lintConfig ->
-                            lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                        }
+                        lintResultService.snippetPassesLinting(snippet.id.toString())
                     }
 
                 (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
@@ -381,9 +381,7 @@ class SnippetService(
                         if (userLintRules.isEmpty()) {
                             true
                         } else {
-                            userLintRules.all { lintConfig ->
-                                lintResultService.snippetPassesRule(snippet.id.toString(), lintConfig.lintRule?.id.toString())
-                            }
+                            lintResultService.snippetPassesLinting(snippet.id.toString())
                         }
                     }
             }
@@ -470,8 +468,6 @@ class SnippetService(
     }
 
     fun updateLintResult(snippetId: String, results: List<LintResultRequest>) {
-        val snippet = snippetRepository.findById(UUID.fromString(snippetId))
-
-
+        lintResultService.createOrUpdateLintResult(snippetId, results)
     }
 }
