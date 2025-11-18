@@ -2,6 +2,7 @@ package org.gudelker.snippet.service.redis.producer
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import org.gudelker.snippet.service.redis.dto.LintRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.RedisConnectionFactory
@@ -12,9 +13,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 @Configuration
 class RedisConfig {
     @Bean
-    fun redisTemplate(factory: RedisConnectionFactory): RedisTemplate<String, Any> {
+    fun redisTemplate(factory: RedisConnectionFactory): RedisTemplate<String, LintRequest> {
         val objectMapper = ObjectMapper().registerKotlinModule()
-        val template = RedisTemplate<String, Any>()
+        val template = RedisTemplate<String, LintRequest>()
         template.connectionFactory = factory
         template.keySerializer = StringRedisSerializer()
         template.hashKeySerializer = StringRedisSerializer()
