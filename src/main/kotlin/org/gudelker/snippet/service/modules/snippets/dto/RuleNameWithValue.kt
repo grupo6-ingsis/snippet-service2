@@ -1,6 +1,6 @@
 package org.gudelker.snippet.service.modules.snippets.dto
 
-class RuleNameWithValue(
+data class RuleNameWithValue(
     val ruleName: String,
     val value: String,
 )
