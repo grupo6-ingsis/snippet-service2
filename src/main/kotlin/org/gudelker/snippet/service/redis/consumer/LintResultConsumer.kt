@@ -16,9 +16,8 @@ import org.springframework.stereotype.Service
 class LintResultConsumer(
     private val snippetService: SnippetService,
     private val redisTemplate: RedisTemplate<String, Any>,
-    private val container: StreamMessageListenerContainer<String, ObjectRecord<String, SnippetIdWithLintResultsDto>>
+    private val container: StreamMessageListenerContainer<String, ObjectRecord<String, SnippetIdWithLintResultsDto>>,
 ) : StreamListener<String, ObjectRecord<String, SnippetIdWithLintResultsDto>> {
-
     private val streamKey = "lint-results"
     private val group = "lint-results-group"
     private val consumerName = "snippet-service-1"
@@ -36,7 +35,7 @@ class LintResultConsumer(
         container.receive(
             Consumer.from(group, consumerName),
             StreamOffset.create(streamKey, ReadOffset.lastConsumed()),
-            this
+            this,
         )
 
         container.start()

@@ -10,6 +10,9 @@ class LintPublisher(
     redisTemplate: RedisTemplate<String, Any>,
 ) : RedisStreamProducer("lint-requests", redisTemplate) {
     fun publishLintRequest(request: LintRequest): RecordId? {
-        return emit(request)
+        println("Publishing to Redis stream: $request")
+        val recordId = emit(request)
+        println("Published with RecordId: $recordId")
+        return recordId
     }
 }

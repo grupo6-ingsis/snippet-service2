@@ -21,16 +21,17 @@ class LintConfigService(
     ): LintConfig? {
         val ruleId = UUID.fromString(request.id)
         val existingConfig = lintConfigRepository.findByUserIdAndLintRuleId(userId, ruleId)
-        
+
         logger.info("Modifying rule: userId=$userId, ruleId=$ruleId, isActive=${request.isActive}, existingConfig=${existingConfig?.id}")
-        
+
         return when {
             // Activate new rule
             request.isActive && existingConfig == null -> {
                 logger.info("Activating new rule: ${request.name}")
-                val rule = lintRuleRepository.findById(ruleId).orElseThrow {
-                    ResponseStatusException(HttpStatus.NOT_FOUND, "Rule not found with id: $ruleId")
-                }
+                val rule =
+                    lintRuleRepository.findById(ruleId).orElseThrow {
+                        ResponseStatusException(HttpStatus.NOT_FOUND, "Rule not found with id: $ruleId")
+                    }
                 val config =
                     LintConfig().apply {
                         this.userId = userId

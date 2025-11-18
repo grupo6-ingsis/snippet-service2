@@ -1,6 +1,5 @@
 package org.gudelker.snippet.service.modules.lintresult
 
-import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.gudelker.snippet.service.redis.dto.LintResultRequest
@@ -19,29 +18,33 @@ class LintResultService(
         snippetId: String,
         results: List<LintResultRequest>,
     ) {
-        val snippet = snippetRepository.findById(UUID.fromString(snippetId))
-            .orElseThrow { IllegalArgumentException("Snippet not found: $snippetId") }
+        val snippet =
+            snippetRepository.findById(UUID.fromString(snippetId))
+                .orElseThrow { IllegalArgumentException("Snippet not found: $snippetId") }
 
         // Delete existing result if any
         lintResultRepository.deleteBySnippetId(snippet.id!!)
 
         // Create new result
-        val lintResult = LintResult().apply {
-            this.snippet = snippet
-            this.complianceType = if (results.isEmpty()) {
-                ComplianceType.COMPLIANT
-            } else {
-                ComplianceType.NON_COMPLIANT
+        val lintResult =
+            LintResult().apply {
+                this.snippet = snippet
+                this.complianceType =
+                    if (results.isEmpty()) {
+                        ComplianceType.COMPLIANT
+                    } else {
+                        ComplianceType.NON_COMPLIANT
+                    }
+                this.lintedAt = LocalDateTime.now()
+                this.errors =
+                    results.map { error ->
+                        LintError(
+                            message = error.message,
+                            line = error.line.toInt(),
+                            columnNumber = error.column.toInt(),
+                        )
+                    }.toMutableList()
             }
-            this.lintedAt = LocalDateTime.now()
-            this.errors = results.map { error ->
-                LintError(
-                    message = error.message,
-                    line = error.line.toInt(),
-                    columnNumber = error.column.toInt()
-                )
-            }.toMutableList()
-        }
 
         lintResultRepository.save(lintResult)
     }

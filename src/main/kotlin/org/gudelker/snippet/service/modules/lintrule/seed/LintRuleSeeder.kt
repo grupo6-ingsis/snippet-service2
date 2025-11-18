@@ -21,7 +21,7 @@ class LintRuleSeeder(
                 Triple(
                     "restrictPrintlnToIdentifierOrLiteral",
                     "Restricts the use of `println` to only accept identifiers or string " +
-                            "literals, preventing dynamic or unsafe expressions.",
+                        "literals, preventing dynamic or unsafe expressions.",
                     emptyList(),
                 ),
                 Triple(

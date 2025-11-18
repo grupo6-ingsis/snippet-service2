@@ -42,11 +42,8 @@ class LintResult {
 data class LintError(
     @Column(nullable = false)
     var message: String = "",
-    
     @Column(nullable = false)
     var line: Int = 0,
-    
     @Column(nullable = false, name = "column_number")
     var columnNumber: Int = 0,
 )
-

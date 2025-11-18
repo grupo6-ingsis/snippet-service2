@@ -24,9 +24,9 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
-import org.gudelker.snippet.service.redis.producer.LintPublisher
 import org.gudelker.snippet.service.redis.dto.LintRequest
 import org.gudelker.snippet.service.redis.dto.LintResultRequest
+import org.gudelker.snippet.service.redis.producer.LintPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -87,7 +87,7 @@ class SnippetService(
                 description = input.description,
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
-                complianceType = ComplianceType.PENDING
+                complianceType = ComplianceType.PENDING,
             )
         val saved = snippetRepository.save(snippet)
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
@@ -201,11 +201,12 @@ class SnippetService(
                 languageVersion =
                     languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
                         ?: throw IllegalArgumentException("LanguageVersion not found"),
-                complianceType = ComplianceType.PENDING
+                complianceType = ComplianceType.PENDING,
             )
         val saved = snippetRepository.save(snippet)
-        val snippetId = saved.id
-            ?: throw RuntimeException("Failed to save snippet")
+        val snippetId =
+            saved.id
+                ?: throw RuntimeException("Failed to save snippet")
         try {
             authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         } catch (ex: Exception) {
@@ -217,7 +218,7 @@ class SnippetService(
             throw RuntimeException("Failed to save content", ex)
         }
 
-        lintSingleSnippet(snippetId,userId)
+        lintSingleSnippet(snippetId, userId)
 
         // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
@@ -448,14 +449,19 @@ class SnippetService(
                         userRules = lintRules,
                         allRules = lintRulesNames,
                     )
+                println("Publishing lint request to Redis: $req") // Add this line
                 lintPublisher.publishLintRequest(req)
+                println("Published lint request to Redis for snippet $snippetId") // And this
             } catch (err: Exception) {
                 throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
             }
         }
     }
 
-    private fun lintSingleSnippet(snippetId: UUID, userId: String) {
+    private fun lintSingleSnippet(
+        snippetId: UUID,
+        userId: String,
+    ) {
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
         val rulesWithValue =
             userLintRules.map { lintConfig ->
@@ -467,7 +473,10 @@ class SnippetService(
         lintSnippets(listOf(snippetId), rulesWithValue)
     }
 
-    fun updateLintResult(snippetId: String, results: List<LintResultRequest>) {
+    fun updateLintResult(
+        snippetId: String,
+        results: List<LintResultRequest>,
+    ) {
         lintResultService.createOrUpdateLintResult(snippetId, results)
     }
 }

@@ -10,17 +10,16 @@ import java.time.Duration
 
 @Configuration
 class RedisLintResultsConfig {
-
     @Bean
     fun lintResultsListenerContainer(
-        redisConnectionFactory: RedisConnectionFactory
+        redisConnectionFactory: RedisConnectionFactory,
     ): StreamMessageListenerContainer<String, ObjectRecord<String, SnippetIdWithLintResultsDto>> {
-
-        val options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
-            .builder()
-            .pollTimeout(Duration.ofMillis(100))
-            .targetType(SnippetIdWithLintResultsDto::class.java)
-            .build()
+        val options =
+            StreamMessageListenerContainer.StreamMessageListenerContainerOptions
+                .builder()
+                .pollTimeout(Duration.ofMillis(100))
+                .targetType(SnippetIdWithLintResultsDto::class.java)
+                .build()
 
         return StreamMessageListenerContainer.create(redisConnectionFactory, options)
     }
