@@ -4,19 +4,15 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
-import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
-import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
-import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
-import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -54,26 +50,6 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): Snippet {
         return snippetService.createSnippetFromEditor(input, jwt)
-    }
-
-    @PostMapping("/file")
-    fun createSnippetFromFile(
-        @RequestBody @Valid input: CreateSnippetFromFileInput,
-        @AuthenticationPrincipal jwt: Jwt,
-    ): SnippetFromFileResponse {
-        return snippetService.createSnippetFromFile(
-            jwt = jwt,
-            input = input,
-        )
-    }
-
-    @PutMapping("/file")
-    fun updateSnippetFromFile(
-        @RequestBody @Valid input: UpdateSnippetFromFileInput,
-    ): UpdateSnippetFromFileResponse {
-        return snippetService.updateSnippetFromFile(
-            input = input,
-        )
     }
 
     @PutMapping("/{snippetId}")

@@ -12,18 +12,14 @@ import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
-import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
-import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromFileResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
-import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromFileInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
-import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromFileInput
 import org.gudelker.snippet.service.redis.dto.LintRequest
 import org.gudelker.snippet.service.redis.dto.LintResultRequest
 import org.gudelker.snippet.service.redis.producer.LintPublisher
@@ -56,108 +52,11 @@ class SnippetService(
         return snippets
     }
 
-    fun createSnippetFromFile(
-        input: CreateSnippetFromFileInput,
-        jwt: Jwt,
-    ): SnippetFromFileResponse {
-        val userId = jwt.subject
-        try {
-            val parseRequest =
-                ParseSnippetRequest(
-                    snippetContent = input.content,
-                    version = input.version,
-                )
-            val result = authApiClient.parseSnippet(parseRequest)
-            if (result == ResultType.FAILURE) {
-                throw IllegalArgumentException("Snippet parsing failed")
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            throw ex
-        }
-        val languageVersion =
-            languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
-                ?: throw IllegalArgumentException("Language version not found")
-
-        val snippet =
-            Snippet(
-                ownerId = userId,
-                title = input.title,
-                languageVersion = languageVersion,
-                description = input.description,
-                created = OffsetDateTime.now(),
-                updated = OffsetDateTime.now(),
-                complianceType = ComplianceType.PENDING,
-            )
-        val saved = snippetRepository.save(snippet)
-        val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
-
-        try {
-            if (saved.id == null) {
-                throw RuntimeException("Failed to save snippet")
-            }
-            authApiClient.authorizeSnippet(saved.id!!, authorizeRequest)
-        } catch (ex: Exception) {
-            throw RuntimeException("Authorization failed", ex)
-        }
-        try {
-            assetApiClient.createAsset("snippets", saved.id.toString(), input.content)
-        } catch (ex: Exception) {
-            throw RuntimeException("Failed to save content", ex)
-        }
-        return createSnippetFromFileResponse(input, userId)
-    }
-
     fun getSnippetsByUserId(userId: String): List<Snippet> {
         val snippets = snippetRepository.findByOwnerId(userId)
         // Initialize lazy-loaded relationships to avoid serialization issues
         snippets.forEach { it.languageVersion.language.name }
         return snippets
-    }
-
-    fun updateSnippetFromFile(input: UpdateSnippetFromFileInput): UpdateSnippetFromFileResponse {
-        if (input.title == null && input.content == null) {
-            throw IllegalArgumentException("At least one attribute (title, content, language) must be provided for update.")
-        }
-        val snippet =
-            snippetRepository.findById(input.snippetId)
-                .orElseThrow { RuntimeException("Snippet not found") }
-
-        val authorization = authApiClient.authorizeUpdateSnippet(input.snippetId)
-        if (!authorization) {
-            throw RuntimeException("Authorization failed")
-        }
-
-        input.title?.let { snippet.title = it }
-        snippet.updated = OffsetDateTime.now()
-        val languageVersion =
-            languageVersionRepository.findByLanguageNameAndVersion(
-                snippet.languageVersion.language.name,
-                snippet.languageVersion.version,
-            )
-        if (languageVersion == null) {
-            throw IllegalArgumentException("LanguageVersion not found")
-        }
-
-        snippetRepository.save(snippet)
-        if (input.content != null) {
-            return UpdateSnippetFromFileResponse(
-                snippetId = snippet.id.toString(),
-                title = snippet.title,
-                content = input.content,
-                language = languageVersion.language.name,
-                version = languageVersion.version,
-                updated = snippet.updated,
-            )
-        }
-        return UpdateSnippetFromFileResponse(
-            snippetId = snippet.id.toString(),
-            title = snippet.title,
-            content = assetApiClient.getAsset("snippets", snippet.id.toString()),
-            language = languageVersion.language.name,
-            version = languageVersion.version,
-            updated = snippet.updated,
-        )
     }
 
     fun getSnippetById(snippetId: String): Snippet {
@@ -178,35 +77,12 @@ class SnippetService(
         val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
 
         try {
-            val parseRequest =
-                ParseSnippetRequest(
-                    snippetContent = input.content,
-                    version = input.version,
-                )
-            val result = authApiClient.parseSnippet(parseRequest)
-            if (result == ResultType.FAILURE) {
-                throw IllegalArgumentException("Snippet parsing failed")
-            }
+            parseAndValidateSnippet(input)
         } catch (ex: Exception) {
             ex.printStackTrace()
             throw ex
         }
-        val snippet =
-            Snippet(
-                ownerId = userId,
-                title = input.title,
-                description = input.description,
-                created = OffsetDateTime.now(),
-                updated = OffsetDateTime.now(),
-                languageVersion =
-                    languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
-                        ?: throw IllegalArgumentException("LanguageVersion not found"),
-                complianceType = ComplianceType.PENDING,
-            )
-        val saved = snippetRepository.save(snippet)
-        val snippetId =
-            saved.id
-                ?: throw RuntimeException("Failed to save snippet")
+        val (saved, snippetId) = createAndSaveSnippet(input, userId)
         try {
             authApiClient.authorizeSnippet(snippetId, authorizeRequest)
         } catch (ex: Exception) {
@@ -217,9 +93,7 @@ class SnippetService(
         } catch (ex: Exception) {
             throw RuntimeException("Failed to save content", ex)
         }
-
         lintSingleSnippet(snippetId, userId)
-
         // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
         return saved
@@ -230,61 +104,18 @@ class SnippetService(
         jwt: Jwt,
         snippetId: String,
     ): UpdateSnippetFromEditorResponse {
-        if (input.title == null && input.content == null && input.description == null) {
-            throw IllegalArgumentException(
-                "At least one attribute (title, content, language, description) must be provided for update.",
-            )
-        }
-        val snippetId = UUID.fromString(snippetId)
-        val snippet =
-            snippetRepository.findById(snippetId)
-                .orElseThrow { RuntimeException("Snippet not found") }
-
+        val snippet = validateAndGetSnippet(input, snippetId, snippetRepository)
         val userId = jwt.subject
         try {
-            val isAuthorized = authApiClient.isUserAuthorizedToWriteSnippet(snippetId.toString(), userId)
-            if (!isAuthorized) {
-                throw RuntimeException("User does not have WRITE permission for this snippet")
-            }
+            checkWritePermission(authApiClient, snippetId, userId)
         } catch (ex: Exception) {
             ex.printStackTrace()
             throw ex
         }
-
-        if (input.content != null) {
-            val parseRequest =
-                ParseSnippetRequest(
-                    snippetContent = input.content,
-                    version = snippet.languageVersion.version,
-                )
-            val parseResult = authApiClient.parseSnippet(parseRequest)
-            if (parseResult == ResultType.FAILURE) {
-                throw IllegalArgumentException("Snippet parsing failed")
-            }
-        }
-
-        input.title?.let { snippet.title = it }
-        input.description?.let { snippet.description = it }
-        snippet.updated = OffsetDateTime.now()
-
+        parseAndUpdateSnippet(input, snippet, authApiClient)
         snippetRepository.save(snippet)
-
-        if (input.content != null) {
-            try {
-                assetApiClient.updateAsset("snippets", snippetId.toString(), input.content)
-            } catch (ex: Exception) {
-                throw RuntimeException("Failed to update content", ex)
-            }
-        }
-        return UpdateSnippetFromEditorResponse(
-            snippetId = snippet.id.toString(),
-            title = snippet.title,
-            description = snippet.description,
-            content = input.content,
-            language = snippet.languageVersion.language.name,
-            version = snippet.languageVersion.version,
-            updated = snippet.updated,
-        )
+        updateSnippetAsset(assetApiClient, snippetId, input.content)
+        return getUpdateSnippetFromEditorResponse(snippet, input)
     }
 
     fun shareSnippet(
@@ -306,23 +137,6 @@ class SnippetService(
             snippetId = snippetId,
             permissionType = PermissionType.READ,
         )
-    }
-
-    private fun createAuthorizeRequestDto(
-        userId: String,
-        permission: PermissionType,
-    ): AuthorizeRequestDto {
-        return AuthorizeRequestDto(
-            userId = userId,
-            permission = permission,
-        )
-    }
-
-    private fun createSnippetFromFileResponse(
-        input: CreateSnippetFromFileInput,
-        userId: String,
-    ): SnippetFromFileResponse {
-        return SnippetFromFileResponse(input.title, input.content, userId)
     }
 
     fun getSnippetsByFilter(
@@ -432,6 +246,23 @@ class SnippetService(
         snippetRepository.delete(snippet)
     }
 
+    fun updateLintResult(
+        snippetId: String,
+        results: List<LintResultRequest>,
+    ) {
+        lintResultService.createOrUpdateLintResult(snippetId, results)
+    }
+
+    private fun createAuthorizeRequestDto(
+        userId: String,
+        permission: PermissionType,
+    ): AuthorizeRequestDto {
+        return AuthorizeRequestDto(
+            userId = userId,
+            permission = permission,
+        )
+    }
+
     private fun lintSnippets(
         snippetIds: List<UUID>,
         lintRules: List<RuleNameWithValue>,
@@ -473,10 +304,121 @@ class SnippetService(
         lintSnippets(listOf(snippetId), rulesWithValue)
     }
 
-    fun updateLintResult(
+    private fun createParseSnippetRequest(input: CreateSnippetFromEditor): ParseSnippetRequest {
+        return ParseSnippetRequest(
+            snippetContent = input.content,
+            version = input.version,
+        )
+    }
+
+    private fun parseAndValidateSnippet(input: CreateSnippetFromEditor) {
+        val parseRequest = createParseSnippetRequest(input)
+        val result = authApiClient.parseSnippet(parseRequest)
+        if (result == ResultType.FAILURE) {
+            throw IllegalArgumentException("Snippet parsing failed")
+        }
+    }
+
+    private fun createSnippetFromEditorInput(
+        input: CreateSnippetFromEditor,
+        userId: String,
+    ): Snippet {
+        return Snippet(
+            ownerId = userId,
+            title = input.title,
+            description = input.description,
+            created = OffsetDateTime.now(),
+            updated = OffsetDateTime.now(),
+            languageVersion =
+                languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
+                    ?: throw IllegalArgumentException("LanguageVersion not found"),
+            complianceType = ComplianceType.PENDING,
+        )
+    }
+
+    private fun createAndSaveSnippet(
+        input: CreateSnippetFromEditor,
+        userId: String,
+    ): Pair<Snippet, UUID> {
+        val snippet = createSnippetFromEditorInput(input, userId)
+        val saved = snippetRepository.save(snippet)
+        val snippetId = saved.id ?: throw RuntimeException("Failed to save snippet")
+        return Pair(saved, snippetId)
+    }
+
+    private fun validateAndGetSnippet(
+        input: UpdateSnippetFromEditorInput,
         snippetId: String,
-        results: List<LintResultRequest>,
+        snippetRepository: SnippetRepository,
+    ): Snippet {
+        if (input.title == null && input.content == null && input.description == null) {
+            throw IllegalArgumentException(
+                "At least one attribute (title, content, language, description) must be provided for update.",
+            )
+        }
+        val uuid = UUID.fromString(snippetId)
+        return snippetRepository.findById(uuid)
+            .orElseThrow { RuntimeException("Snippet not found") }
+    }
+
+    private fun checkWritePermission(
+        authApiClient: AuthApiClient,
+        snippetId: String,
+        userId: String,
     ) {
-        lintResultService.createOrUpdateLintResult(snippetId, results)
+        val isAuthorized = authApiClient.isUserAuthorizedToWriteSnippet(snippetId, userId)
+        if (!isAuthorized) {
+            throw RuntimeException("User does not have WRITE permission for this snippet")
+        }
+    }
+
+    private fun parseAndUpdateSnippet(
+        input: UpdateSnippetFromEditorInput,
+        snippet: Snippet,
+        authApiClient: AuthApiClient,
+    ) {
+        if (input.content != null) {
+            val parseRequest =
+                ParseSnippetRequest(
+                    snippetContent = input.content,
+                    version = snippet.languageVersion.version,
+                )
+            val parseResult = authApiClient.parseSnippet(parseRequest)
+            if (parseResult == ResultType.FAILURE) {
+                throw IllegalArgumentException("Snippet parsing failed")
+            }
+        }
+        input.title?.let { snippet.title = it }
+        input.description?.let { snippet.description = it }
+        snippet.updated = OffsetDateTime.now()
+    }
+
+    private fun updateSnippetAsset(
+        assetApiClient: AssetApiClient,
+        snippetId: String,
+        content: String?,
+    ) {
+        if (content != null) {
+            try {
+                assetApiClient.updateAsset("snippets", snippetId, content)
+            } catch (ex: Exception) {
+                throw RuntimeException("Failed to update content", ex)
+            }
+        }
+    }
+
+    private fun getUpdateSnippetFromEditorResponse(
+        snippet: Snippet,
+        input: UpdateSnippetFromEditorInput,
+    ): UpdateSnippetFromEditorResponse {
+        return UpdateSnippetFromEditorResponse(
+            snippetId = snippet.id.toString(),
+            title = snippet.title,
+            description = snippet.description,
+            content = input.content,
+            language = snippet.languageVersion.language.name,
+            version = snippet.languageVersion.version,
+            updated = snippet.updated,
+        )
     }
 }
