@@ -4,6 +4,7 @@ import jakarta.validation.Valid
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
+import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileRequest
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
@@ -14,6 +15,7 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.springframework.data.domain.Page
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -26,9 +28,11 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.toEntity
+import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
 
 @RestController
@@ -42,6 +46,18 @@ class SnippetController(
     @GetMapping("/all")
     fun getAllSnippets(): List<Snippet> {
         return snippetService.getAllSnippets()
+    }
+
+    @PostMapping(
+        "/upload",
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE]
+    )
+    fun createSnippetFromFile(
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestPart("file") file: MultipartFile,
+        @RequestPart("metadata") request: SnippetFromFileRequest
+    ): Snippet {
+        return snippetService.createSnippetFromFile(jwt, file, request)
     }
 
     @PostMapping("")
@@ -95,8 +111,6 @@ class SnippetController(
     ): ResponseEntity<SnippetContentDto> {
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
-        println(token)
-        println("**********************************************************************************")
         try {
             val permission: PermissionType? =
                 restClient.get()
@@ -148,8 +162,6 @@ class SnippetController(
         } catch (e: AccessDeniedException) {
             ResponseEntity.status(403).build()
         } catch (e: Exception) {
-            println("Error sharing snippet: ${e.message}")
-            e.printStackTrace()
             ResponseEntity.status(500).build()
         }
     }
@@ -174,8 +186,6 @@ class SnippetController(
         } catch (e: AccessDeniedException) {
             ResponseEntity.status(403).build()
         } catch (e: Exception) {
-            println("Error deleting snippet: ${e.message}")
-            e.printStackTrace()
             ResponseEntity.status(500).build()
         }
     }

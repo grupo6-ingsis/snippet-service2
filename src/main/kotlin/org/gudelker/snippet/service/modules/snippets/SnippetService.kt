@@ -12,6 +12,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
+import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileRequest
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
@@ -31,6 +32,8 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.multipart.MultipartFile
+import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -45,6 +48,75 @@ class SnippetService(
     private val languageVersionRepository: LanguageVersionRepository,
     private val lintPublisher: LintPublisher,
 ) {
+
+    @Transactional
+    fun createSnippetFromFile(
+        jwt: Jwt,
+        file: MultipartFile,
+        request: SnippetFromFileRequest
+    ): Snippet {
+        val userId = jwt.subject
+
+        if (userId.isEmpty()) {
+            throw HttpClientErrorException(HttpStatus.FORBIDDEN, "User ID is missing in JWT")
+        }
+
+        // Validar que el archivo no esté vacío
+        if (file.isEmpty) {
+            throw HttpClientErrorException(HttpStatus.BAD_REQUEST, "File is empty")
+        }
+
+        // Leer el contenido del archivo
+        val content = String(file.bytes, StandardCharsets.UTF_8)
+
+        // Validar el snippet usando el parser
+        val validationResult = authApiClient.parseSnippet(
+            ParseSnippetRequest(
+                snippetContent = content,
+                version = request.version
+            )
+        )
+        if (validationResult == ResultType.FAILURE) {
+            throw IllegalArgumentException("Snippet parsing failed")
+        }
+
+        val languageVersion = languageVersionRepository.findByLanguageNameAndVersion(
+            request.language,
+            request.version
+        ) ?: throw HttpClientErrorException(
+            HttpStatus.NOT_FOUND,
+            "Language version not found"
+        )
+
+        val snippet =  Snippet(
+            ownerId = userId,
+            title = request.name,
+            description = request.description,
+            created = OffsetDateTime.now(),
+            updated = OffsetDateTime.now(),
+            languageVersion = languageVersion,
+            complianceType = ComplianceType.PENDING,
+        )
+
+        val savedSnippet = snippetRepository.save(snippet)
+        val snippetId = savedSnippet.id ?: throw RuntimeException("Failed to save snippet")
+        val authorizeRequest = createAuthorizeRequestDto(userId, PermissionType.WRITE)
+
+        try {
+            authApiClient.authorizeSnippet(snippetId, authorizeRequest)
+        } catch (ex: Exception) {
+            throw RuntimeException("Authorization failed", ex)
+        }
+
+        try {
+            assetApiClient.createAsset("snippets", snippetId.toString(), content)
+        } catch (ex: Exception) {
+            throw RuntimeException("Failed to save content", ex)
+        }
+
+        return savedSnippet
+    }
+
     fun getAllSnippets(): List<Snippet> {
         val snippets = snippetRepository.findAll()
         // Initialize lazy-loaded relationships to avoid serialization issues
