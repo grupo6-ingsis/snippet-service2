@@ -134,13 +134,24 @@ class SnippetService(
         return snippets
     }
 
-    fun getSnippetById(snippetId: String): Snippet {
+    fun getSnippetById(snippetId: String): SnippetWithComplianceDto {
+        val snippetUuid = UUID.fromString(snippetId)
         val snippet =
-            snippetRepository.findById(UUID.fromString(snippetId))
+            snippetRepository.findById(snippetUuid)
                 .orElseThrow { RuntimeException("Snippet not found") }
+        val compliance = lintResultService.getSnippetLintComplianceType(snippetUuid)
         // Initialize lazy-loaded relationships to avoid serialization issues
         snippet.languageVersion.language.name
-        return snippet
+        return SnippetWithComplianceDto(
+            id = snippetId,
+            title = snippet.title,
+            description = snippet.description,
+            ownerId = snippet.ownerId,
+            languageVersion = snippet.languageVersion,
+            created = snippet.created,
+            updated = snippet.updated,
+            compliance = compliance!!,
+        )
     }
 
     @Transactional
