@@ -48,12 +48,11 @@ class SnippetService(
     private val languageVersionRepository: LanguageVersionRepository,
     private val lintPublisher: LintPublisher,
 ) {
-
     @Transactional
     fun createSnippetFromFile(
         jwt: Jwt,
         file: MultipartFile,
-        request: SnippetFromFileRequest
+        request: SnippetFromFileRequest,
     ): Snippet {
         val userId = jwt.subject
 
@@ -70,33 +69,36 @@ class SnippetService(
         val content = String(file.bytes, StandardCharsets.UTF_8)
 
         // Validar el snippet usando el parser
-        val validationResult = authApiClient.parseSnippet(
-            ParseSnippetRequest(
-                snippetContent = content,
-                version = request.version
+        val validationResult =
+            authApiClient.parseSnippet(
+                ParseSnippetRequest(
+                    snippetContent = content,
+                    version = request.version,
+                ),
             )
-        )
         if (validationResult == ResultType.FAILURE) {
             throw IllegalArgumentException("Snippet parsing failed")
         }
 
-        val languageVersion = languageVersionRepository.findByLanguageNameAndVersion(
-            request.language,
-            request.version
-        ) ?: throw HttpClientErrorException(
-            HttpStatus.NOT_FOUND,
-            "Language version not found"
-        )
+        val languageVersion =
+            languageVersionRepository.findByLanguageNameAndVersion(
+                request.language,
+                request.version,
+            ) ?: throw HttpClientErrorException(
+                HttpStatus.NOT_FOUND,
+                "Language version not found",
+            )
 
-        val snippet =  Snippet(
-            ownerId = userId,
-            title = request.name,
-            description = request.description,
-            created = OffsetDateTime.now(),
-            updated = OffsetDateTime.now(),
-            languageVersion = languageVersion,
-            complianceType = ComplianceType.PENDING,
-        )
+        val snippet =
+            Snippet(
+                ownerId = userId,
+                title = request.name,
+                description = request.description,
+                created = OffsetDateTime.now(),
+                updated = OffsetDateTime.now(),
+                languageVersion = languageVersion,
+                complianceType = ComplianceType.PENDING,
+            )
 
         val savedSnippet = snippetRepository.save(snippet)
         val snippetId = savedSnippet.id ?: throw RuntimeException("Failed to save snippet")

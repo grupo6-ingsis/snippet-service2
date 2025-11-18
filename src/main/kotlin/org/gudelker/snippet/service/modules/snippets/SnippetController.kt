@@ -50,12 +50,12 @@ class SnippetController(
 
     @PostMapping(
         "/upload",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE]
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
     )
     fun createSnippetFromFile(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestPart("file") file: MultipartFile,
-        @RequestPart("metadata") request: SnippetFromFileRequest
+        @RequestPart("metadata") request: SnippetFromFileRequest,
     ): Snippet {
         return snippetService.createSnippetFromFile(jwt, file, request)
     }
