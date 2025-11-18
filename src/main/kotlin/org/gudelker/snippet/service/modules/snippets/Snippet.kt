@@ -12,7 +12,6 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import org.gudelker.snippet.service.modules.langver.LanguageVersion
 import org.gudelker.snippet.service.modules.lintresult.LintResult
-import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.hibernate.annotations.UuidGenerator
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -39,6 +38,4 @@ class Snippet(
     var lintResult: LintResult? = null,
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     var languageVersion: LanguageVersion,
-    @Column
-    var complianceType: ComplianceType,
 )

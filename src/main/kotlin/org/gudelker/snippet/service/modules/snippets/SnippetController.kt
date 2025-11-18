@@ -6,6 +6,7 @@ import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileRequest
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
+import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
@@ -97,10 +98,10 @@ class SnippetController(
         @RequestParam(defaultValue = "ALL") accessType: AccessType,
         @RequestParam(defaultValue = "") name: String,
         @RequestParam(defaultValue = "") language: String,
-        @RequestParam(defaultValue = "true") passedLint: Boolean,
+        @RequestParam(required = false) passedLint: Boolean?,
         @RequestParam(defaultValue = "NAME") sortBy: SortByType,
         @RequestParam(defaultValue = "DESC") direction: DirectionType,
-    ): Page<Snippet> {
+    ): Page<SnippetWithComplianceDto> {
         return snippetService.getSnippetsByFilter(jwt, page, pageSize, accessType, name, language, passedLint, sortBy, direction)
     }
 

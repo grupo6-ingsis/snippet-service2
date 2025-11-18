@@ -3,6 +3,7 @@ package org.gudelker.snippet.service.modules.snippets
 import jakarta.transaction.Transactional
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
+import org.gudelker.snippet.service.api.EngineApiClient
 import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.langver.LanguageVersionRepository
 import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
@@ -13,6 +14,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.create.SnippetFromFileRequest
+import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
@@ -22,7 +24,6 @@ import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFro
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.gudelker.snippet.service.redis.dto.LintRequest
-import org.gudelker.snippet.service.redis.dto.LintResultRequest
 import org.gudelker.snippet.service.redis.producer.LintPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -42,6 +43,7 @@ class SnippetService(
     private val snippetRepository: SnippetRepository,
     private val authApiClient: AuthApiClient,
     private val assetApiClient: AssetApiClient,
+    private val engineApiClient: EngineApiClient,
     private val lintConfigService: LintConfigService,
     private val lintRuleRepository: LintRuleRepository,
     private val lintResultService: LintResultService,
@@ -70,7 +72,7 @@ class SnippetService(
 
         // Validar el snippet usando el parser
         val validationResult =
-            authApiClient.parseSnippet(
+            engineApiClient.parseSnippet(
                 ParseSnippetRequest(
                     snippetContent = content,
                     version = request.version,
@@ -97,7 +99,6 @@ class SnippetService(
                 created = OffsetDateTime.now(),
                 updated = OffsetDateTime.now(),
                 languageVersion = languageVersion,
-                complianceType = ComplianceType.PENDING,
             )
 
         val savedSnippet = snippetRepository.save(snippet)
@@ -220,10 +221,10 @@ class SnippetService(
         accessType: AccessType,
         name: String,
         language: String,
-        passedLint: Boolean,
+        passedLint: Boolean?,
         sortBy: SortByType,
         direction: DirectionType,
-    ): Page<Snippet> {
+    ): Page<SnippetWithComplianceDto> {
         val userId = jwt.subject
 
         if (userId.isEmpty()) {
@@ -249,16 +250,21 @@ class SnippetService(
 
         val filtered =
             snippets.filter { snippet ->
-                val passesAllRules =
-                    if (userLintRules.isEmpty()) {
-                        true
-                    } else {
-                        lintResultService.snippetPassesLinting(snippet.id.toString())
+                val matchesName = name.isEmpty() || snippet.title.contains(name, ignoreCase = true)
+                val matchesLanguage = language.isEmpty() || snippet.languageVersion.language.name.equals(language, ignoreCase = true)
+
+                // Filtro de linting:
+                // - Si passedLint es null (no se pasó el parámetro), no filtramos por lint (todos pasan)
+                // - Si passedLint es true, solo mostramos snippets que pasaron el linting
+                // - Si passedLint es false, mostramos solo los que NO pasaron el linting
+                val matchesLintFilter =
+                    when (passedLint) {
+                        null -> true // No filtrar por lint
+                        true -> userLintRules.isEmpty() || lintResultService.snippetPassesLinting(snippet.id.toString())
+                        false -> userLintRules.isNotEmpty() && !lintResultService.snippetPassesLinting(snippet.id.toString())
                     }
 
-                (name.isEmpty() || snippet.title.contains(name, ignoreCase = true)) &&
-                    (language.isEmpty() || snippet.languageVersion.language.name.equals(language, ignoreCase = true)) &&
-                    (!passedLint || passesAllRules)
+                matchesName && matchesLanguage && matchesLintFilter
             }
 
         val sorted =
@@ -276,10 +282,30 @@ class SnippetService(
             }
 
         val ordered = if (direction == DirectionType.DESC) sorted.reversed() else sorted
-
+        val snippetsWithCompliance =
+            ordered.map { snippet ->
+                val complianceType =
+                    if (userLintRules.isEmpty()) {
+                        ComplianceType.COMPLIANT
+                    } else if (lintResultService.snippetPassesLinting(snippet.id.toString())) {
+                        ComplianceType.COMPLIANT
+                    } else {
+                        ComplianceType.NON_COMPLIANT
+                    }
+                SnippetWithComplianceDto(
+                    id = snippet.id.toString(),
+                    title = snippet.title,
+                    description = snippet.description,
+                    ownerId = snippet.ownerId,
+                    languageVersion = snippet.languageVersion,
+                    created = snippet.created,
+                    updated = snippet.updated,
+                    compliance = complianceType,
+                )
+            }
         val start = page * pageSize
-        val end = minOf(start + pageSize, ordered.size)
-        val paginatedContent = if (start < ordered.size) ordered.subList(start, end) else emptyList()
+        val end = minOf(start + pageSize, snippetsWithCompliance.size)
+        val paginatedContent = if (start < ordered.size) snippetsWithCompliance.subList(start, end) else emptyList()
 
         return PageImpl(paginatedContent, PageRequest.of(page, pageSize), ordered.size.toLong())
     }
@@ -318,13 +344,6 @@ class SnippetService(
         }
 
         snippetRepository.delete(snippet)
-    }
-
-    fun updateLintResult(
-        snippetId: String,
-        results: List<LintResultRequest>,
-    ) {
-        lintResultService.createOrUpdateLintResult(snippetId, results)
     }
 
     private fun createAuthorizeRequestDto(
@@ -387,7 +406,7 @@ class SnippetService(
 
     private fun parseAndValidateSnippet(input: CreateSnippetFromEditor) {
         val parseRequest = createParseSnippetRequest(input)
-        val result = authApiClient.parseSnippet(parseRequest)
+        val result = engineApiClient.parseSnippet(parseRequest)
         if (result == ResultType.FAILURE) {
             throw IllegalArgumentException("Snippet parsing failed")
         }
@@ -406,7 +425,6 @@ class SnippetService(
             languageVersion =
                 languageVersionRepository.findByLanguageNameAndVersion(input.language, input.version)
                     ?: throw IllegalArgumentException("LanguageVersion not found"),
-            complianceType = ComplianceType.PENDING,
         )
     }
 
@@ -457,7 +475,7 @@ class SnippetService(
                     snippetContent = input.content,
                     version = snippet.languageVersion.version,
                 )
-            val parseResult = authApiClient.parseSnippet(parseRequest)
+            val parseResult = engineApiClient.parseSnippet(parseRequest)
             if (parseResult == ResultType.FAILURE) {
                 throw IllegalArgumentException("Snippet parsing failed")
             }

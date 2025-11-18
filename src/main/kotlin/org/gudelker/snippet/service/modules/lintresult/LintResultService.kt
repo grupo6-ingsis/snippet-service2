@@ -3,6 +3,7 @@ package org.gudelker.snippet.service.modules.lintresult
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.gudelker.snippet.service.redis.dto.LintResultRequest
+import org.gudelker.snippet.service.redis.dto.SnippetIdWithLintResultsDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -17,7 +18,7 @@ class LintResultService(
     fun createOrUpdateLintResult(
         snippetId: String,
         results: List<LintResultRequest>,
-    ) {
+    ): SnippetIdWithLintResultsDto {
         val snippet =
             snippetRepository.findById(UUID.fromString(snippetId))
                 .orElseThrow { IllegalArgumentException("Snippet not found: $snippetId") }
@@ -47,14 +48,25 @@ class LintResultService(
             }
 
         lintResultRepository.save(lintResult)
+        return SnippetIdWithLintResultsDto(snippetId, results)
     }
 
     fun getLintResultBySnippetId(snippetId: UUID): LintResult? {
         return lintResultRepository.findBySnippetId(snippetId)
     }
 
+    fun getSnippetLintComplianceType(snippetId: UUID): ComplianceType? {
+        val result = lintResultRepository.findBySnippetId(snippetId)
+        return result?.complianceType
+    }
+
+    fun getSnippetLintErrors(snippetId: UUID): List<LintError> {
+        val result = lintResultRepository.findBySnippetId(snippetId)
+        return result?.errors ?: emptyList()
+    }
+
     fun snippetPassesLinting(snippetId: String): Boolean {
         val result = lintResultRepository.findBySnippetId(UUID.fromString(snippetId))
-        return result?.complianceType == ComplianceType.COMPLIANT
+        return result?.complianceType == ComplianceType.COMPLIANT || result?.complianceType == ComplianceType.PENDING
     }
 }
