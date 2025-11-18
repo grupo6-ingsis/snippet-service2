@@ -1,6 +1,11 @@
 package org.gudelker.snippet.service.modules.snippets.dto
 
-data class RuleNameWithValue(
-    val ruleName: String,
-    val value: String,
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class RuleNameWithValue
+@JsonCreator
+constructor(
+    @JsonProperty("ruleName") val ruleName: String,
+    @JsonProperty("value") val value: String,
 )
