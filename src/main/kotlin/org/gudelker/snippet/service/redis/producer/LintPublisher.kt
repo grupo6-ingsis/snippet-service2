@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class LintPublisher(
-    redisTemplate: RedisTemplate<String, Any>,
+    redisTemplate: RedisTemplate<String, LintRequest>,
 ) : RedisStreamProducer("lint-requests", redisTemplate) {
     fun publishLintRequest(request: LintRequest): RecordId? {
         println("Publishing to Redis stream: $request")
