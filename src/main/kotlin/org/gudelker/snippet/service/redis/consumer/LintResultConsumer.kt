@@ -18,20 +18,34 @@ class LintResultConsumer(
     private val redisTemplate: RedisTemplate<String, Any>,
     private val container: StreamMessageListenerContainer<String, ObjectRecord<String, SnippetIdWithLintResultsDto>>,
 ) : StreamListener<String, ObjectRecord<String, SnippetIdWithLintResultsDto>> {
+
     private val streamKey = "lint-results"
     private val group = "lint-results-group"
     private val consumerName = "snippet-service-1"
 
     @PostConstruct
     fun init() {
+        // ----------------------------------------------------
+        // 🔥 LIMPIA EL STREAM PARA ELIMINAR MENSAJES VIEJOS
+        // ----------------------------------------------------
+        println("🔥 Borrando stream '$streamKey' al iniciar consumidor...")
+        redisTemplate.delete(streamKey)
+
+        // ----------------------------------------------------
+        // Crear consumer group (solo si existe el stream)
+        // ----------------------------------------------------
         try {
             redisTemplate
                 .opsForStream<String, Any>()
                 .createGroup(streamKey, group)
+            println("👥 Grupo '$group' creado.")
         } catch (e: Exception) {
-            println("Group ya existe, OK")
+            println("👥 Grupo '$group' ya existe, OK.")
         }
 
+        // ----------------------------------------------------
+        // Iniciar escucha del stream
+        // ----------------------------------------------------
         container.receive(
             Consumer.from(group, consumerName),
             StreamOffset.create(streamKey, ReadOffset.lastConsumed()),
@@ -39,6 +53,7 @@ class LintResultConsumer(
         )
 
         container.start()
+        println("📡 Consumidor de '$streamKey' iniciado.")
     }
 
     override fun onMessage(record: ObjectRecord<String, SnippetIdWithLintResultsDto>) {
