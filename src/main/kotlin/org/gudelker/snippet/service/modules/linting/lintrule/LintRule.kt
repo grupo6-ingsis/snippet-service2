@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lintrule
+package org.gudelker.snippet.service.modules.linting.lintrule
 
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection

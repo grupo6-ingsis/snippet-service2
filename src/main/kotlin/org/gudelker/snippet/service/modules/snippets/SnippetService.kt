@@ -6,9 +6,9 @@ import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.EngineApiClient
 import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.langver.LanguageVersionRepository
-import org.gudelker.snippet.service.modules.lintconfig.LintConfigService
-import org.gudelker.snippet.service.modules.lintresult.LintResultService
-import org.gudelker.snippet.service.modules.lintrule.LintRuleRepository
+import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfigService
+import org.gudelker.snippet.service.modules.linting.lintresult.LintResultService
+import org.gudelker.snippet.service.modules.linting.lintrule.LintRuleRepository
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
@@ -221,7 +221,6 @@ class SnippetService(
             sharedUserId = sharedUserId,
             userId = userId,
             snippetId = snippetId,
-            permissionType = PermissionType.READ,
         )
     }
 

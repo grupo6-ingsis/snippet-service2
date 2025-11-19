@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lintconfig.input
+package org.gudelker.snippet.service.modules.linting.lintconfig.input
 
 data class ActivateRuleRequest(
     val id: String,

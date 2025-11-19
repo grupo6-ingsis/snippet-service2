@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lintresult
+package org.gudelker.snippet.service.modules.linting.lintresult
 
 import org.gudelker.snippet.service.redis.dto.SnippetIdWithLintResultsDto
 import org.springframework.web.bind.annotation.PutMapping

@@ -1,8 +1,8 @@
-package org.gudelker.snippet.service.modules.lintrule.seed
+package org.gudelker.snippet.service.modules.linting.lintrule.seed
 
 import jakarta.annotation.PostConstruct
-import org.gudelker.snippet.service.modules.lintrule.LintRule
-import org.gudelker.snippet.service.modules.lintrule.LintRuleRepository
+import org.gudelker.snippet.service.modules.linting.lintrule.LintRule
+import org.gudelker.snippet.service.modules.linting.lintrule.LintRuleRepository
 import org.springframework.stereotype.Component
 
 @Component

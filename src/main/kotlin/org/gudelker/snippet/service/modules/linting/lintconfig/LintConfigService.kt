@@ -1,7 +1,7 @@
-package org.gudelker.snippet.service.modules.lintconfig
+package org.gudelker.snippet.service.modules.linting.lintconfig
 
-import org.gudelker.snippet.service.modules.lintconfig.input.ActivateRuleRequest
-import org.gudelker.snippet.service.modules.lintrule.LintRuleRepository
+import org.gudelker.snippet.service.modules.linting.lintconfig.input.ActivateRuleRequest
+import org.gudelker.snippet.service.modules.linting.lintrule.LintRuleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
