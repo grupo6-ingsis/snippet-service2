@@ -27,12 +27,13 @@ class UsersController(
             println("🔍 Searching users: query='$query', page=$page, perPage=$perPage")
 
             val managementToken = auth0ManagementTokenService.getManagementToken()
-            val result = auth0UsersService.searchUsers(
-                managementToken = managementToken.access_token,
-                query = query,
-                page = page,
-                perPage = perPage.coerceAtMost(10),
-            )
+            val result =
+                auth0UsersService.searchUsers(
+                    managementToken = managementToken.access_token,
+                    query = query,
+                    page = page,
+                    perPage = perPage.coerceAtMost(10),
+                )
 
             println("✅ Found ${result.users.size} users (total: ${result.total})")
 
@@ -46,7 +47,7 @@ class UsersController(
                     total = 0,
                     start = 0,
                     limit = perPage,
-                )
+                ),
             )
         }
     }

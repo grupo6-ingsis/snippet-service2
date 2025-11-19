@@ -19,18 +19,20 @@ class Auth0ManagementTokenService(
     @Value("\${auth0.token-url}") private val tokenUrl: String,
 ) {
     fun getManagementToken(): Auth0ManagementTokenResponse {
-        val requestBody = mapOf(
-            "client_id" to clientId,
-            "client_secret" to clientSecret,
-            "audience" to "https://$domain/api/v2/",
-            "grant_type" to "client_credentials",
-        )
+        val requestBody =
+            mapOf(
+                "client_id" to clientId,
+                "client_secret" to clientSecret,
+                "audience" to "https://$domain/api/v2/",
+                "grant_type" to "client_credentials",
+            )
 
-        val response = restClient.post()
-            .uri(tokenUrl)
-            .body(requestBody)
-            .retrieve()
-            .body(Auth0ManagementTokenResponse::class.java)
+        val response =
+            restClient.post()
+                .uri(tokenUrl)
+                .body(requestBody)
+                .retrieve()
+                .body(Auth0ManagementTokenResponse::class.java)
 
         return response ?: throw RuntimeException("Failed to obtain Auth0 Management API token")
     }

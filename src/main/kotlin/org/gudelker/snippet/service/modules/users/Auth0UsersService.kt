@@ -20,47 +20,51 @@ class Auth0UsersService(
         perPage: Int = 10,
     ): Auth0UsersResponse {
         return try {
-            val searchQuery = if (query.isNotBlank()) {
-                "(email:*${query}* OR name:*${query}* OR nickname:*${query}*)"
-            } else {
-                null
-            }
-
-            val response = restClient.get()
-                .uri { uriBuilder ->
-                    val builder = uriBuilder
-                        .scheme("https")
-                        .host(domain)
-                        .path("/api/v2/users")
-                        .queryParam("page", page)
-                        .queryParam("per_page", perPage.coerceAtMost(10))
-                        .queryParam("include_totals", true)
-
-                    if (searchQuery != null) {
-                        builder
-                            .queryParam("q", searchQuery)
-                            .queryParam("search_engine", "v3")
-                    }
-
-                    builder.build()
+            val searchQuery =
+                if (query.isNotBlank()) {
+                    "(email:*$query* OR name:*$query* OR nickname:*$query*)"
+                } else {
+                    null
                 }
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $managementToken")
-                .retrieve()
-                .body(object : ParameterizedTypeReference<Map<String, Any>>() {})
+
+            val response =
+                restClient.get()
+                    .uri { uriBuilder ->
+                        val builder =
+                            uriBuilder
+                                .scheme("https")
+                                .host(domain)
+                                .path("/api/v2/users")
+                                .queryParam("page", page)
+                                .queryParam("per_page", perPage.coerceAtMost(10))
+                                .queryParam("include_totals", true)
+
+                        if (searchQuery != null) {
+                            builder
+                                .queryParam("q", searchQuery)
+                                .queryParam("search_engine", "v3")
+                        }
+
+                        builder.build()
+                    }
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer $managementToken")
+                    .retrieve()
+                    .body(object : ParameterizedTypeReference<Map<String, Any>>() {})
 
             if (response != null) {
                 @Suppress("UNCHECKED_CAST")
-                val users = (response["users"] as? List<Map<String, Any>>)?.map { userMap ->
-                    Auth0User(
-                        user_id = userMap["user_id"] as? String ?: "",
-                        email = userMap["email"] as? String,
-                        name = userMap["name"] as? String,
-                        nickname = userMap["nickname"] as? String,
-                        picture = userMap["picture"] as? String,
-                        created_at = userMap["created_at"] as? String,
-                        updated_at = userMap["updated_at"] as? String,
-                    )
-                } ?: emptyList()
+                val users =
+                    (response["users"] as? List<Map<String, Any>>)?.map { userMap ->
+                        Auth0User(
+                            user_id = userMap["user_id"] as? String ?: "",
+                            email = userMap["email"] as? String,
+                            name = userMap["name"] as? String,
+                            nickname = userMap["nickname"] as? String,
+                            picture = userMap["picture"] as? String,
+                            created_at = userMap["created_at"] as? String,
+                            updated_at = userMap["updated_at"] as? String,
+                        )
+                    } ?: emptyList()
 
                 val total = response["total"] as? Int ?: 0
                 val start = response["start"] as? Int ?: 0
