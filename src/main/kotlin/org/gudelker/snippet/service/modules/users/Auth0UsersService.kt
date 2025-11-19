@@ -24,10 +24,10 @@ class Auth0UsersService(
 
             // Construir el query de búsqueda
             val searchQuery =
-                if (query.length < 3) {
+                if (query.isBlank()) {
                     null
                 } else {
-                    "email:$query* OR name:$query* OR nickname:$query*"
+                    "email:${query}* OR name:${query}* OR nickname:${query}*"
                 }
 
             println("🔍 Auth0 Search Query: $searchQuery")
@@ -47,6 +47,7 @@ class Auth0UsersService(
 
                         if (searchQuery != null) {
                             builder.queryParam("q", searchQuery)
+                            builder.queryParam("search_engine", "v3")
                         }
 
                         builder.build()
