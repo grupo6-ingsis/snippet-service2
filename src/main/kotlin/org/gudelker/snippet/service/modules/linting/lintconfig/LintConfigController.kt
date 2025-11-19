@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.linting.lintconfig
 
+import org.gudelker.snippet.service.modules.linting.LintingOrchestratorService
 import org.gudelker.snippet.service.modules.linting.lintconfig.input.ActivateRuleRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/lintconfig")
-class LintConfigController(private val lintConfigService: LintConfigService) {
+class LintConfigController(
+    private val lintConfigService: LintConfigService,
+    private val orchestratorLintingService: LintingOrchestratorService,
+) {
     @GetMapping("/user")
     fun getLintConfigsByUserId(
         @AuthenticationPrincipal jwt: Jwt,
@@ -27,6 +31,7 @@ class LintConfigController(private val lintConfigService: LintConfigService) {
     ): ResponseEntity<LintConfig> {
         val result = lintConfigService.modifyRule(request, jwt.subject)
         return if (result != null) {
+            orchestratorLintingService.lintUserSnippets(jwt.subject)
             ResponseEntity.ok(result)
         } else {
             ResponseEntity.noContent().build()

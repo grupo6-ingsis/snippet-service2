@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.formatting.formatconfig
 
+import org.gudelker.snippet.service.modules.formatting.FormattingOrchestratorService
 import org.gudelker.snippet.service.modules.formatting.formatconfig.input.ActivateFormatRuleRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/formatconfig")
-class FormatConfigController(private val formatConfigService: FormatConfigService) {
+class FormatConfigController(
+    private val formatConfigService: FormatConfigService,
+    private val orchestratorFormattingservice: FormattingOrchestratorService,
+) {
     @GetMapping("/user")
     fun getLintConfigsByUserId(
         @AuthenticationPrincipal jwt: Jwt,
@@ -27,6 +31,7 @@ class FormatConfigController(private val formatConfigService: FormatConfigServic
     ): ResponseEntity<FormatConfig> {
         val result = formatConfigService.modifyFormatConfig(request, jwt.subject)
         return if (result != null) {
+            orchestratorFormattingservice.formatUserSnippets(jwt.subject)
             ResponseEntity.ok(result)
         } else {
             ResponseEntity.noContent().build()

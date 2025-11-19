@@ -5,16 +5,12 @@ import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.EngineApiClient
 import org.gudelker.snippet.service.api.ResultType
-import org.gudelker.snippet.service.modules.formatting.formatconfig.FormatConfigService
-import org.gudelker.snippet.service.modules.formatting.formatrule.FormatRuleRepository
 import org.gudelker.snippet.service.modules.langver.LanguageVersionRepository
+import org.gudelker.snippet.service.modules.linting.LintingOrchestratorService
 import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.linting.lintresult.LintResultService
-import org.gudelker.snippet.service.modules.linting.lintrule.LintRuleRepository
-import org.gudelker.snippet.service.modules.snippets.dto.FormatRuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
-import org.gudelker.snippet.service.modules.snippets.dto.RuleNameWithValue
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto
 import org.gudelker.snippet.service.modules.snippets.dto.share.ShareSnippetResponseDto
@@ -25,10 +21,6 @@ import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
-import org.gudelker.snippet.service.redis.dto.FormatRequest
-import org.gudelker.snippet.service.redis.dto.LintRequest
-import org.gudelker.snippet.service.redis.producer.FormatPublisher
-import org.gudelker.snippet.service.redis.producer.LintPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -47,13 +39,9 @@ class SnippetService(
     private val assetApiClient: AssetApiClient,
     private val engineApiClient: EngineApiClient,
     private val lintConfigService: LintConfigService,
-    private val lintRuleRepository: LintRuleRepository,
     private val lintResultService: LintResultService,
     private val languageVersionRepository: LanguageVersionRepository,
-    private val lintPublisher: LintPublisher,
-    private val formatPublisher: FormatPublisher,
-    private val formatConfigService: FormatConfigService,
-    private val formatRuleRepository: FormatRuleRepository,
+    private val orchestratorLintingService: LintingOrchestratorService,
 ) {
     fun getAllSnippets(): List<Snippet> {
         val snippets = snippetRepository.findAll()
@@ -114,10 +102,7 @@ class SnippetService(
         } catch (ex: Exception) {
             throw RuntimeException("Failed to save content", ex)
         }
-        println("-----------------formateando")
-        formatSingleSnippet(snippetId, userId)
-        println("-----------------linteando")
-        lintSingleSnippet(snippetId, userId)
+        orchestratorLintingService.lintSingleSnippet(snippetId, userId)
         // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
         return saved
@@ -258,32 +243,6 @@ class SnippetService(
         return PageImpl(paginatedContent, PageRequest.of(page, pageSize), ordered.size.toLong())
     }
 
-    fun lintUserSnippets(userId: String) {
-        val snippetsIds = snippetRepository.findByOwnerId(userId).mapNotNull { it.id }
-        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
-        val rulesWithValue =
-            userLintRules.map { lintConfig ->
-                RuleNameWithValue(
-                    ruleName = lintConfig.lintRule?.name ?: "",
-                    value = lintConfig.ruleValue ?: "",
-                )
-            }
-        lintSnippets(snippetsIds, rulesWithValue)
-    }
-
-    fun formatUserSnippets(userId: String) {
-        val snippetsIds = snippetRepository.findByOwnerId(userId).mapNotNull { it.id }
-        val userFormatRules = formatConfigService.getAllRulesFromUser(userId)
-        val rulesWithValue =
-            userFormatRules.map { formatConfig ->
-                FormatRuleNameWithValue(
-                    ruleName = formatConfig.formatRule?.name ?: "",
-                    value = formatConfig.ruleValue ?: 0,
-                )
-            }
-        formatSnippets(snippetsIds, rulesWithValue)
-    }
-
     @Transactional
     fun deleteSnippet(
         snippetId: String,
@@ -315,88 +274,6 @@ class SnippetService(
             userId = userId,
             permission = permission,
         )
-    }
-
-    private fun formatSnippets(
-        snippetIds: List<UUID>,
-        formatRules: List<FormatRuleNameWithValue>,
-    ) {
-        val defaultFormatRules = formatRuleRepository.findAll()
-        val lintRulesNames = defaultFormatRules.map { it.name }
-        for (snippetId in snippetIds) {
-            try {
-                val snippet = snippetRepository.findById(snippetId)
-                val version = snippet.get().languageVersion.version
-                val req =
-                    FormatRequest(
-                        snippetId = snippetId.toString(),
-                        snippetVersion = version,
-                        userRules = formatRules,
-                        allRules = lintRulesNames,
-                    )
-                println("Publishing lint request to Redis: $req") // Add this line
-                formatPublisher.publishFormatRequest(req)
-                println("Published lint request to Redis for snippet $snippetId") // And this
-            } catch (err: Exception) {
-                throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
-            }
-        }
-    }
-
-    private fun lintSnippets(
-        snippetIds: List<UUID>,
-        lintRules: List<RuleNameWithValue>,
-    ) {
-        val defaultLintRules = lintRuleRepository.findAll()
-        val lintRulesNames = defaultLintRules.map { it.name }
-        for (snippetId in snippetIds) {
-            try {
-                val snippet = snippetRepository.findById(snippetId)
-                val version = snippet.get().languageVersion.version
-                val req =
-                    LintRequest(
-                        snippetId = snippetId.toString(),
-                        snippetVersion = version,
-                        userRules = lintRules,
-                        allRules = lintRulesNames,
-                    )
-                println("Publishing lint request to Redis: $req") // Add this line
-                lintPublisher.publishLintRequest(req)
-                println("Published lint request to Redis for snippet $snippetId") // And this
-            } catch (err: Exception) {
-                throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
-            }
-        }
-    }
-
-    private fun lintSingleSnippet(
-        snippetId: UUID,
-        userId: String,
-    ) {
-        val userLintRules = lintConfigService.getAllRulesFromUser(userId)
-        val rulesWithValue =
-            userLintRules.map { lintConfig ->
-                RuleNameWithValue(
-                    ruleName = lintConfig.lintRule?.name ?: "",
-                    value = lintConfig.ruleValue ?: "",
-                )
-            }
-        lintSnippets(listOf(snippetId), rulesWithValue)
-    }
-
-    private fun formatSingleSnippet(
-        snippetId: UUID,
-        userId: String,
-    ) {
-        val userFormatRules = formatConfigService.getAllRulesFromUser(userId)
-        val rulesWithValue =
-            userFormatRules.map { formatConfig ->
-                FormatRuleNameWithValue(
-                    ruleName = formatConfig.formatRule?.name ?: "",
-                    value = formatConfig.ruleValue ?: 0,
-                )
-            }
-        formatSnippets(listOf(snippetId), rulesWithValue)
     }
 
     private fun createParseSnippetRequest(input: CreateSnippetFromEditor): ParseSnippetRequest {

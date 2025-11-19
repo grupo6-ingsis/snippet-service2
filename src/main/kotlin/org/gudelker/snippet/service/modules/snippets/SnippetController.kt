@@ -150,13 +150,6 @@ class SnippetController(
         }
     }
 
-    @PostMapping("/lint")
-    fun lintSnippet(
-        @AuthenticationPrincipal jwt: Jwt,
-    ) {
-        return snippetService.lintUserSnippets(jwt.subject)
-    }
-
     @DeleteMapping("/{snippetId}")
     fun deleteSnippet(
         @PathVariable snippetId: String,
