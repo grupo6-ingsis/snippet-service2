@@ -30,8 +30,8 @@ class FormatConfigController(
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<FormatConfig> {
         val result = formatConfigService.modifyFormatConfig(request, jwt.subject)
+        orchestratorFormattingservice.formatUserSnippets(jwt.subject)
         return if (result != null) {
-            orchestratorFormattingservice.formatUserSnippets(jwt.subject)
             ResponseEntity.ok(result)
         } else {
             ResponseEntity.noContent().build()

@@ -30,8 +30,8 @@ class LintConfigController(
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<LintConfig> {
         val result = lintConfigService.modifyRule(request, jwt.subject)
+        orchestratorLintingService.lintUserSnippets(jwt.subject)
         return if (result != null) {
-            orchestratorLintingService.lintUserSnippets(jwt.subject)
             ResponseEntity.ok(result)
         } else {
             ResponseEntity.noContent().build()
