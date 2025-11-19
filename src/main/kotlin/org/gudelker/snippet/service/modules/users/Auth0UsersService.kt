@@ -20,12 +20,15 @@ class Auth0UsersService(
         perPage: Int = 10,
     ): Auth0UsersResponse {
         return try {
+            // Auth0 requiere mínimo 3 caracteres para búsquedas con wildcard
             val searchQuery =
-                if (query.isNotBlank()) {
-                    "(email:*$query* OR name:*$query* OR nickname:*$query*)"
+                if (query.isNotBlank() && query.length >= 3) {
+                    "email:*$query* OR name:*$query* OR nickname:*$query*"
                 } else {
+                    // Sin query = traer todos los usuarios
                     null
                 }
+            println("🔍 Auth0 Search Query: $searchQuery")
 
             val response =
                 restClient.get()
@@ -77,6 +80,7 @@ class Auth0UsersService(
                     limit = limit,
                 )
             } else {
+                println("⚠️ Auth0 returned null response")
                 Auth0UsersResponse(emptyList(), 0, 0, perPage)
             }
         } catch (e: Exception) {
