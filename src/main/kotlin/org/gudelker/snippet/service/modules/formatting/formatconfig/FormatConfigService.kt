@@ -18,6 +18,7 @@ class FormatConfigService(
     ): FormatConfig? {
         val ruleId = UUID.fromString(request.id)
         val existingConfig = formatConfigRepository.findByUserIdAndFormatRuleId(userId, ruleId)
+        val value: Int? = request.ruleValue?.toIntOrNull()
 
         return when {
             request.isActive && existingConfig == null -> {
@@ -31,7 +32,7 @@ class FormatConfigService(
                         this.formatRule = rule
                         this.ruleValue =
                             if (request.hasValue) {
-                                request.ruleValue ?: throw ResponseStatusException(
+                                value ?: throw ResponseStatusException(
                                     HttpStatus.BAD_REQUEST,
                                     "ruleValue cannot be null for rules that require a value",
                                 )
@@ -49,7 +50,7 @@ class FormatConfigService(
                             "ruleValue cannot be null for rules that require a value",
                         )
                     }
-                    existingConfig.ruleValue = request.ruleValue
+                    existingConfig.ruleValue = value
                 } else {
                     existingConfig.ruleValue = null
                 }
