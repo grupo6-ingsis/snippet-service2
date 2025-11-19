@@ -1,0 +1,29 @@
+package org.gudelker.snippet.service.modules.formatting.formatrule
+
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
+import org.hibernate.annotations.UuidGenerator
+import java.util.UUID
+
+@Entity
+class FormatRule {
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @UuidGenerator
+    var id: UUID? = null
+
+    @Column(nullable = false, unique = true)
+    var name: String = ""
+
+    @Column(nullable = false)
+    var description: String = ""
+
+    @Column(nullable = false)
+    var hasValue: Boolean = false
+
+    @ElementCollection
+    var valueOptions: List<Int> = emptyList()
+}

@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lintresult
+package org.gudelker.snippet.service.modules.linting.lintresult
 
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType

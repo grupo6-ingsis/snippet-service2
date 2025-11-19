@@ -11,7 +11,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import org.gudelker.snippet.service.modules.langver.LanguageVersion
-import org.gudelker.snippet.service.modules.lintresult.LintResult
+import org.gudelker.snippet.service.modules.linting.lintresult.LintResult
 import org.hibernate.annotations.UuidGenerator
 import java.time.OffsetDateTime
 import java.util.UUID

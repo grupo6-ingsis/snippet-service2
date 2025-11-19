@@ -13,7 +13,6 @@ import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
-import org.gudelker.snippet.service.modules.snippets.input.share.ShareSnippetInput
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.springframework.data.domain.Page
 import org.springframework.http.MediaType
@@ -144,17 +143,17 @@ class SnippetController(
         }
     }
 
-    @PatchMapping("/share/{snippetId}")
+    @PatchMapping("/share/{snippetId}/{sharedUserId}")
     fun shareSnippet(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
-        @RequestBody input: ShareSnippetInput,
+        @PathVariable sharedUserId: String,
     ): ResponseEntity<ShareSnippetResponseDto> {
         return try {
             val response =
                 snippetService.shareSnippet(
                     userId = jwt.subject,
-                    sharedUserId = input.sharedUserId,
+                    sharedUserId = sharedUserId,
                     snippetId = UUID.fromString(snippetId),
                 )
             ResponseEntity.ok(response)
