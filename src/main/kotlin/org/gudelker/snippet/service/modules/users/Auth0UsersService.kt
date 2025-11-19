@@ -27,7 +27,7 @@ class Auth0UsersService(
                 if (query.isBlank()) {
                     null
                 } else {
-                    "email:${query}* OR name:${query}* OR nickname:${query}*"
+                    "email:$query* OR name:$query* OR nickname:$query*"
                 }
 
             println("🔍 Auth0 Search Query: $searchQuery")

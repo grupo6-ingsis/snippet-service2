@@ -114,7 +114,9 @@ class SnippetService(
         } catch (ex: Exception) {
             throw RuntimeException("Failed to save content", ex)
         }
+        println("-----------------formateando")
         formatSingleSnippet(snippetId, userId)
+        println("-----------------linteando")
         lintSingleSnippet(snippetId, userId)
         // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
