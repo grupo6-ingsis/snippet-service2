@@ -31,3 +31,4 @@ auth0:
   client-id: ${AUTH0_CLIENT_ID}
   client-secret: ${AUTH0_CLIENT_SECRET}
   token-url: ${AUTH0_TOKEN_URL}
+  domain: ${AUTH0_DOMAIN}
