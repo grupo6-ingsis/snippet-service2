@@ -1,6 +1,6 @@
-package org.gudelker.snippet.service.modules.lintconfig
+package org.gudelker.snippet.service.modules.formatting.formatconfig
 
-import org.gudelker.snippet.service.modules.lintconfig.input.ActivateRuleRequest
+import org.gudelker.snippet.service.modules.formatting.formatconfig.input.ActivateFormatRuleRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -11,21 +11,21 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/lintconfig")
-class LintConfigController(private val lintConfigService: LintConfigService) {
+@RequestMapping("/formatconfig")
+class FormatConfigController(private val formatConfigService: FormatConfigService) {
     @GetMapping("/user")
     fun getLintConfigsByUserId(
         @AuthenticationPrincipal jwt: Jwt,
-    ): List<LintConfig> {
-        return lintConfigService.getAllRulesFromUser(jwt.subject)
+    ): List<FormatConfig> {
+        return formatConfigService.getAllRulesFromUser(jwt.subject)
     }
 
     @PostMapping
     fun modifyRule(
-        @RequestBody request: ActivateRuleRequest,
+        @RequestBody request: ActivateFormatRuleRequest,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<LintConfig> {
-        val result = lintConfigService.modifyRule(request, jwt.subject)
+    ): ResponseEntity<FormatConfig> {
+        val result = formatConfigService.modifyFormatConfig(request, jwt.subject)
         return if (result != null) {
             ResponseEntity.ok(result)
         } else {

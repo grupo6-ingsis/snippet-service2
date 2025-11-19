@@ -1,4 +1,4 @@
-package org.gudelker.snippet.service.modules.lintrule
+package org.gudelker.snippet.service.modules.linting.lintrule
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
