@@ -23,29 +23,27 @@ class LintResultService(
             snippetRepository.findById(UUID.fromString(snippetId))
                 .orElseThrow { IllegalArgumentException("Snippet not found: $snippetId") }
 
-        // Delete existing result if any
-        lintResultRepository.deleteBySnippetId(snippet.id!!)
+        // Find existing result or create new one
+        val lintResult = lintResultRepository.findBySnippetId(snippet.id!!) ?: LintResult()
 
-        // Create new result
-        val lintResult =
-            LintResult().apply {
-                this.snippet = snippet
-                this.complianceType =
-                    if (results.isEmpty()) {
-                        ComplianceType.COMPLIANT
-                    } else {
-                        ComplianceType.NON_COMPLIANT
-                    }
-                this.lintedAt = LocalDateTime.now()
-                this.errors =
-                    results.map { error ->
-                        LintError(
-                            message = error.message,
-                            line = error.line.toInt(),
-                            columnNumber = error.column.toInt(),
-                        )
-                    }.toMutableList()
-            }
+        lintResult.apply {
+            this.snippet = snippet
+            this.complianceType =
+                if (results.isEmpty()) {
+                    ComplianceType.COMPLIANT
+                } else {
+                    ComplianceType.NON_COMPLIANT
+                }
+            this.lintedAt = LocalDateTime.now()
+            this.errors =
+                results.map { error ->
+                    LintError(
+                        message = error.message,
+                        line = error.line.toInt(),
+                        columnNumber = error.column.toInt(),
+                    )
+                }.toMutableList()
+        }
 
         lintResultRepository.save(lintResult)
         return SnippetIdWithLintResultsDto(snippetId, results)
