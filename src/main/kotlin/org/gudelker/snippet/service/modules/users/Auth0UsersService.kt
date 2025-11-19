@@ -18,21 +18,28 @@ class Auth0UsersService(
         query: String = "",
         page: Int = 0,
         perPage: Int = 10,
-    ): Auth0UsersResponse =
+    ): Auth0UsersResponse {
         try {
             println("🔍 Auth0 Search - Query: '$query', Page: $page, PerPage: $perPage")
 
-            // Search Query Construction
+            // Construir el query de búsqueda
             val searchQuery =
                 when {
-                    query.isBlank() -> null
-                    query.length == 1 -> "email:$query* OR name:$query* OR nickname:$query*"
-                    query.length == 2 -> "email:$query* OR name:$query* OR nickname:$query*"
-                    else -> "email:*$query* OR name:*$query* OR nickname:*$query*"
+                    query.isBlank() -> null // Sin query = todos los usuarios
+                    query.length == 1 -> {
+                        "email:$query* OR name:$query* OR nickname:$query*"
+                    }
+                    query.length == 2 -> {
+                        "email:$query* OR name:$query* OR nickname:$query*"
+                    }
+                    else -> {
+                        "email:*$query* OR name:*$query* OR nickname:*$query*"
+                    }
                 }
 
             println("🔍 Auth0 Search Query: $searchQuery")
 
+            // Intentar primero con el tipo genérico Map
             val response =
                 restClient.get()
                     .uri { uriBuilder ->
@@ -57,61 +64,114 @@ class Auth0UsersService(
                     .retrieve()
                     .body(object : ParameterizedTypeReference<Map<String, Any>>() {})
 
-            println("📦 Raw Auth0 Response: $response")
+            println("📦 Raw Response Type: ${response?.javaClass}")
+            println("📦 Response keys: ${response?.keys}")
 
-            if (response != null) {
-                @Suppress("UNCHECKED_CAST")
-                val usersList = response["users"] as? List<*>
-                println("👥 Users list type: ${usersList?.javaClass}, size: ${usersList?.size}")
+            if (response == null) {
+                println("⚠️ Auth0 returned null response")
+                return Auth0UsersResponse(emptyList(), 0, 0, perPage)
+            }
 
-                val users =
-                    usersList?.mapNotNull { userObj ->
-                        try {
-                            val userMap = userObj as? Map<String, Any>
-                            if (userMap != null) {
-                                Auth0User(
-                                    user_id = userMap["user_id"] as? String ?: "",
-                                    email = userMap["email"] as? String,
-                                    name = userMap["name"] as? String,
-                                    nickname = userMap["nickname"] as? String,
-                                    picture = userMap["picture"] as? String,
-                                    created_at = userMap["created_at"] as? String,
-                                    updated_at = userMap["updated_at"] as? String,
-                                )
-                            } else {
-                                println("⚠️ User object is not a Map: $userObj")
-                                null
-                            }
-                        } catch (e: Exception) {
-                            println("⚠️ Error parsing user: ${e.message}, userObj: $userObj")
-                            null
-                        }
-                    } ?: emptyList()
+            // Extraer total primero
+            val total =
+                when (val totalValue = response["total"]) {
+                    is Number -> totalValue.toInt()
+                    is String -> totalValue.toIntOrNull() ?: 0
+                    else -> {
+                        println("⚠️ Total value is unexpected type: ${totalValue?.javaClass}")
+                        0
+                    }
+                }
+            println("📊 Total from Auth0: $total")
 
-                println("✅ Parsed ${users.size} users successfully")
-                users.forEach { user ->
-                    println("   - ${user.name} (${user.email})")
+            // Extraer start
+            val start =
+                when (val startValue = response["start"]) {
+                    is Number -> startValue.toInt()
+                    is String -> startValue.toIntOrNull() ?: 0
+                    else -> 0
                 }
 
-                val total = (response["total"] as? Number)?.toInt() ?: users.size
-                val start = (response["start"] as? Number)?.toInt() ?: 0
-                val limit = (response["limit"] as? Number)?.toInt() ?: perPage
+            // Extraer limit
+            val limit =
+                when (val limitValue = response["limit"]) {
+                    is Number -> limitValue.toInt()
+                    is String -> limitValue.toIntOrNull() ?: perPage
+                    else -> perPage
+                }
 
-                println("📊 Total: $total, Start: $start, Limit: $limit")
+            // Procesar la lista de usuarios
+            val usersValue = response["users"]
+            println("👥 Users value type: ${usersValue?.javaClass}")
+            println("👥 Users value: $usersValue")
 
-                Auth0UsersResponse(
-                    users = users,
-                    total = total,
-                    start = start,
-                    limit = limit,
-                )
-            } else {
-                println("⚠️ Auth0 returned null response")
-                Auth0UsersResponse(emptyList(), 0, 0, perPage)
+            val users =
+                when (usersValue) {
+                    is List<*> -> {
+                        println("✅ Users is a List with ${usersValue.size} items")
+                        usersValue.mapNotNull { userObj ->
+                            try {
+                                println("🔍 Processing user object: $userObj")
+                                println("🔍 User object type: ${userObj?.javaClass}")
+
+                                when (userObj) {
+                                    is Map<*, *> -> {
+                                        @Suppress("UNCHECKED_CAST")
+                                        val userMap = userObj as Map<String, Any>
+
+                                        val userId = userMap["user_id"]?.toString() ?: ""
+                                        val email = userMap["email"]?.toString()
+                                        val name = userMap["name"]?.toString()
+                                        val nickname = userMap["nickname"]?.toString()
+                                        val picture = userMap["picture"]?.toString()
+                                        val createdAt = userMap["created_at"]?.toString()
+                                        val updatedAt = userMap["updated_at"]?.toString()
+
+                                        println("✅ Parsed user: id=$userId, name=$name, email=$email")
+
+                                        Auth0User(
+                                            user_id = userId,
+                                            email = email,
+                                            name = name,
+                                            nickname = nickname,
+                                            picture = picture,
+                                            created_at = createdAt,
+                                            updated_at = updatedAt,
+                                        )
+                                    }
+                                    else -> {
+                                        println("⚠️ User object is not a Map: $userObj")
+                                        null
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                println("❌ Error parsing user: ${e.message}")
+                                e.printStackTrace()
+                                null
+                            }
+                        }
+                    }
+                    else -> {
+                        println("❌ Users is not a List! Type: ${usersValue?.javaClass}")
+                        emptyList()
+                    }
+                }
+
+            println("✅ Successfully parsed ${users.size} users out of $total total")
+            users.forEachIndexed { index, user ->
+                println("   [$index] ${user.name} (${user.email}) - ID: ${user.user_id}")
             }
+
+            return Auth0UsersResponse(
+                users = users,
+                total = total,
+                start = start,
+                limit = limit,
+            )
         } catch (e: Exception) {
             println("❌ Error searching users in Auth0: ${e.message}")
             e.printStackTrace()
-            Auth0UsersResponse(emptyList(), 0, 0, perPage)
+            return Auth0UsersResponse(emptyList(), 0, 0, perPage)
         }
+    }
 }
