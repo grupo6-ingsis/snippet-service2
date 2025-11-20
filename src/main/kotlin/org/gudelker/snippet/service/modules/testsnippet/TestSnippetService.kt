@@ -3,8 +3,8 @@ package org.gudelker.snippet.service.modules.testsnippet
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.EngineApiClient
-import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.interpret.InterpretSnippetRequest
+import org.gudelker.snippet.service.modules.interpret.InterpretSnippetResponse
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
@@ -67,7 +67,7 @@ class TestSnippetService(
     fun runTestSnippets(
         testCase: CreateTestSnippetRequest,
         userId: String,
-    ): ResultType {
+    ): InterpretSnippetResponse {
         val permission = authApiClient.hasPermission(testCase.snippetId, userId)
         println("Permission: $permission")
         if (permission == null) {

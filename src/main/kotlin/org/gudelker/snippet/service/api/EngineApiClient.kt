@@ -2,6 +2,7 @@ package org.gudelker.snippet.service.api
 
 import org.gudelker.snippet.service.auth.CachedTokenService
 import org.gudelker.snippet.service.modules.interpret.InterpretSnippetRequest
+import org.gudelker.snippet.service.modules.interpret.InterpretSnippetResponse
 import org.gudelker.snippet.service.modules.snippets.dto.ParseSnippetRequest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -24,7 +25,7 @@ class EngineApiClient(
             .body(ResultType::class.java) ?: throw RuntimeException("No response from snippet service")
     }
 
-    fun interpretSnippet(request: InterpretSnippetRequest): ResultType {
+    fun interpretSnippet(request: InterpretSnippetRequest): InterpretSnippetResponse {
         val machineToken = cachedTokenService.getToken()
         return restClient.post()
             .uri("http://snippet-engine:8080/snippet/interpret")
@@ -32,6 +33,6 @@ class EngineApiClient(
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .body(request)
             .retrieve()
-            .body(ResultType::class.java) ?: throw RuntimeException("No response from snippet service")
+            .body(InterpretSnippetResponse::class.java) ?: throw RuntimeException("No response from snippet service")
     }
 }

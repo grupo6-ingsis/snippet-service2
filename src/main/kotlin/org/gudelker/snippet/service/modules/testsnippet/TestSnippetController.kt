@@ -1,6 +1,6 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
-import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.interpret.InterpretSnippetResponse
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
 import org.springframework.http.ResponseEntity
@@ -55,7 +55,7 @@ class TestSnippetController(
     fun runTestSnippets(
         @RequestBody testCase: CreateTestSnippetRequest,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<ResultType> {
+    ): ResponseEntity<InterpretSnippetResponse> {
         val result = testSnippetService.runTestSnippets(testCase, jwt.subject)
         println(result)
         return ResponseEntity.ok(result)
