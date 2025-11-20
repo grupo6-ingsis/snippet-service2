@@ -4,20 +4,16 @@ import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
 import org.gudelker.snippet.service.modules.snippets.Snippet
-import org.hibernate.annotations.UuidGenerator
 import java.util.UUID
 
 @Entity
 class TestSnippet {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @UuidGenerator
     @Column(updatable = false, nullable = false)
-    val id: UUID? = null
+    var id: UUID? = null
 
     @ElementCollection
     @Column(name = "input")

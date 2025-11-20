@@ -5,4 +5,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface TestSnippetRepository : JpaRepository<TestSnippet, UUID>
+interface TestSnippetRepository : JpaRepository<TestSnippet, UUID> {
+    fun findAllBySnippetId(snippetId: UUID): List<TestSnippet>
+}

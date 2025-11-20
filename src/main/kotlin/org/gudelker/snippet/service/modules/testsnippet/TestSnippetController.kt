@@ -1,17 +1,20 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
+import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/testsnippets")
+@RequestMapping("/testsnippet")
 class TestSnippetController(
     private val testSnippetService: TestSnippetService,
 ) {
@@ -25,9 +28,19 @@ class TestSnippetController(
 
     @DeleteMapping("/{id}")
     fun deleteTestSnippet(
-        @PathVariable id: UUID,
-    ): ResponseEntity<Void> {
+        @PathVariable id: String,
+    ): ResponseEntity<String> {
+        val id = UUID.fromString(id)
         testSnippetService.deleteTestSnippet(id)
-        return ResponseEntity.noContent().build()
+        return "Deleted successfully".let { ResponseEntity.ok(it) }
+    }
+
+    @GetMapping
+    fun getTestSnippetsBySnippetId(
+        @RequestParam snippetId: String,
+    ): ResponseEntity<List<TestSnippetResponseDto>> {
+        val id: UUID = UUID.fromString(snippetId)
+        val testSnippets = testSnippetService.getTestSnippetsBySnippetId(id)
+        return ResponseEntity.ok(testSnippets)
     }
 }
