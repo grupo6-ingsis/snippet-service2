@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.api
 
 import org.gudelker.snippet.service.auth.CachedTokenService
+import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeRequestDto
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeResponseDto
 import org.springframework.core.ParameterizedTypeReference
@@ -90,5 +91,26 @@ class AuthApiClient(
             e.printStackTrace()
             emptyList()
         }
+    }
+
+    fun hasPermission(
+        snippetId: String,
+        userId: String,
+    ): PermissionType? {
+        val machineToken = cachedTokenService.getToken()
+
+        return restClient.get()
+            .uri { uriBuilder ->
+                uriBuilder
+                    .scheme("http")
+                    .host("authorization")
+                    .port(8080)
+                    .path("/api/permissions/{$snippetId}")
+                    .queryParam("userId", userId)
+                    .build()
+            }
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+            .retrieve()
+            .body(PermissionType::class.java)
     }
 }

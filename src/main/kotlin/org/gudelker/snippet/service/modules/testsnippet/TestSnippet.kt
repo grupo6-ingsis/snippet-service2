@@ -24,11 +24,11 @@ class TestSnippet {
 
     @ElementCollection
     @Column(name = "input")
-    var input: List<String>? = null
+    var input: MutableList<String>? = null
 
     @ElementCollection
     @Column(name = "expected_output")
-    var expectedOutput: List<String>? = null
+    var expectedOutput: MutableList<String>? = null
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     lateinit var snippet: Snippet

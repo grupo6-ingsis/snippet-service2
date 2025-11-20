@@ -1,6 +1,10 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
+import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
+import org.gudelker.snippet.service.api.EngineApiClient
+import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.interpret.InterpretSnippetRequest
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
@@ -13,6 +17,8 @@ class TestSnippetService(
     private val testSnippetRepository: TestSnippetRepository,
     private val snippetRepository: SnippetRepository,
     private val authApiClient: AuthApiClient,
+    private val engineApiClient: EngineApiClient,
+    private val assetApiClient: AssetApiClient,
 ) {
     fun createTestSnippet(
         request: CreateTestSnippetRequest,
@@ -56,5 +62,29 @@ class TestSnippetService(
                 id = testSnippet.id.toString(),
             )
         }
+    }
+
+    fun runTestSnippets(
+        testCase: CreateTestSnippetRequest,
+        userId: String,
+    ): ResultType {
+        val permission = authApiClient.hasPermission(testCase.snippetId, userId)
+        if (permission == null) {
+            throw IllegalAccessException("User is not authorized to run test snippets for this snippet")
+        }
+        val testSnippet =
+            testSnippetRepository.findById(UUID.fromString(testCase.id))
+                .orElseThrow { IllegalArgumentException("TestSnippet not found") }
+        val snippet =
+            snippetRepository.findById(UUID.fromString(testCase.snippetId))
+                .orElseThrow { IllegalArgumentException("Snippet not found") }
+        val content = assetApiClient.getAsset("snippets", testCase.snippetId)
+        val interpretRequest =
+            InterpretSnippetRequest(
+                content,
+                snippet.languageVersion.version,
+                testSnippet.input ?: mutableListOf(),
+            )
+        return engineApiClient.interpretSnippet(interpretRequest)
     }
 }

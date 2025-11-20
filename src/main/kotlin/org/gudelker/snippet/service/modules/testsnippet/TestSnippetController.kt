@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
+import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
 import org.springframework.http.ResponseEntity
@@ -48,5 +49,14 @@ class TestSnippetController(
         println("id ESTE ES EL IDDD: $id")
         val testSnippets = testSnippetService.getTestSnippetsBySnippetId(id)
         return ResponseEntity.ok(testSnippets)
+    }
+
+    @PostMapping("/run")
+    fun runTestSnippets(
+        @RequestBody testCase: CreateTestSnippetRequest,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<ResultType> {
+        val result = testSnippetService.runTestSnippets(testCase, jwt.subject)
+        return ResponseEntity.ok(result)
     }
 }
