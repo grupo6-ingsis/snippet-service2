@@ -39,7 +39,7 @@ class TestSnippetController(
         return "Deleted successfully".let { ResponseEntity.ok(it) }
     }
 
-    @GetMapping("/{snippetId}")
+    @GetMapping
     fun getTestSnippetsBySnippetId(
         @RequestParam snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
