@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
+import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
@@ -11,11 +12,23 @@ import kotlin.toString
 class TestSnippetService(
     private val testSnippetRepository: TestSnippetRepository,
     private val snippetRepository: SnippetRepository,
+    private val authApiClient: AuthApiClient,
 ) {
-    fun createTestSnippet(request: CreateTestSnippetRequest): TestSnippet {
+    fun createTestSnippet(
+        request: CreateTestSnippetRequest,
+        userId: String,
+    ): TestSnippet {
         val snippet =
             snippetRepository.findById(UUID.fromString(request.snippetId))
                 .orElseThrow { IllegalArgumentException("Snippet not found") }
+        val isAuthorized =
+            authApiClient.isUserAuthorizedToWriteSnippet(
+                snippetId = request.snippetId,
+                userId = userId,
+            )
+        if (!isAuthorized) {
+            throw IllegalAccessException("User is not authorized to add test snippets to this snippet")
+        }
         val testSnippet =
             TestSnippet().apply {
                 name = request.name
@@ -32,12 +45,15 @@ class TestSnippetService(
     }
 
     fun getTestSnippetsBySnippetId(snippetId: UUID): List<TestSnippetResponseDto> {
+        snippetRepository.findById(snippetId)
+            .orElseThrow { IllegalArgumentException("Snippet not found") }
         return testSnippetRepository.findAllBySnippetId(snippetId).map { testSnippet ->
             TestSnippetResponseDto(
                 name = testSnippet.name,
                 input = testSnippet.input,
                 output = testSnippet.expectedOutput,
-                snippetId = testSnippet.snippet.id?.toString(),
+                snippetId = testSnippet.snippet.id.toString(),
+                id = testSnippet.id.toString(),
             )
         }
     }
