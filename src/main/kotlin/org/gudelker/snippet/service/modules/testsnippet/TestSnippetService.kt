@@ -18,7 +18,7 @@ class TestSnippetService(
                 .orElseThrow { IllegalArgumentException("Snippet not found") }
         val testSnippet =
             TestSnippet().apply {
-                id = UUID.fromString(request.id)
+                name = request.name
                 input = request.input
                 expectedOutput = request.expectedOutput
                 this.snippet = snippet
@@ -34,7 +34,7 @@ class TestSnippetService(
     fun getTestSnippetsBySnippetId(snippetId: UUID): List<TestSnippetResponseDto> {
         return testSnippetRepository.findAllBySnippetId(snippetId).map { testSnippet ->
             TestSnippetResponseDto(
-                name = testSnippet.snippet.toString(),
+                name = testSnippet.name,
                 input = testSnippet.input,
                 output = testSnippet.expectedOutput,
                 snippetId = testSnippet.snippet.id?.toString(),
