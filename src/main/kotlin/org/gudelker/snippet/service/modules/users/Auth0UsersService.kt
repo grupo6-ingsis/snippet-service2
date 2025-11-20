@@ -20,8 +20,6 @@ class Auth0UsersService(
         perPage: Int = 10,
     ): Auth0UsersResponse {
         try {
-            println("🔍 Auth0 Search - Query: '$query', Page: $page, PerPage: $perPage")
-
             // Construir el query de búsqueda
             val searchQuery =
                 if (query.isBlank()) {
@@ -29,8 +27,6 @@ class Auth0UsersService(
                 } else {
                     "email:$query* OR name:$query* OR nickname:$query*"
                 }
-
-            println("🔍 Auth0 Search Query: $searchQuery")
 
             // Intentar primero con el tipo genérico Map
             val response =
@@ -56,9 +52,6 @@ class Auth0UsersService(
                     .retrieve()
                     .body(object : ParameterizedTypeReference<Map<String, Any>>() {})
 
-            println("📦 Raw Response Type: ${response?.javaClass}")
-            println("📦 Response keys: ${response?.keys}")
-
             if (response == null) {
                 println("⚠️ Auth0 returned null response")
                 return Auth0UsersResponse(emptyList(), 0, 0, perPage)
@@ -74,8 +67,6 @@ class Auth0UsersService(
                         0
                     }
                 }
-            println("📊 Total from Auth0: $total")
-
             // Extraer start
             val start =
                 when (val startValue = response["start"]) {
@@ -94,9 +85,6 @@ class Auth0UsersService(
 
             // Procesar la lista de usuarios
             val usersValue = response["users"]
-            println("👥 Users value type: ${usersValue?.javaClass}")
-            println("👥 Users value: $usersValue")
-
             val users =
                 when (usersValue) {
                     is List<*> -> {
@@ -149,7 +137,6 @@ class Auth0UsersService(
                     }
                 }
 
-            println("✅ Successfully parsed ${users.size} users out of $total total")
             users.forEachIndexed { index, user ->
                 println("   [$index] ${user.name} (${user.email}) - ID: ${user.user_id}")
             }

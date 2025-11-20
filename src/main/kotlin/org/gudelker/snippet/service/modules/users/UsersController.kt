@@ -24,7 +24,6 @@ class UsersController(
         @RequestParam(defaultValue = "10") perPage: Int,
     ): ResponseEntity<Auth0UsersResponse> {
         return try {
-            println("🔍 Searching users: query='$query', page=$page, perPage=$perPage")
 
             val managementToken = auth0ManagementTokenService.getManagementToken()
             val result =
@@ -34,8 +33,6 @@ class UsersController(
                     page = page,
                     perPage = perPage.coerceAtMost(10),
                 )
-
-            println("✅ Found ${result.users.size} users (total: ${result.total})")
 
             ResponseEntity.ok(result)
         } catch (e: Exception) {
