@@ -88,12 +88,8 @@ class Auth0UsersService(
             val users =
                 when (usersValue) {
                     is List<*> -> {
-                        println("✅ Users is a List with ${usersValue.size} items")
                         usersValue.mapNotNull { userObj ->
                             try {
-                                println("🔍 Processing user object: $userObj")
-                                println("🔍 User object type: ${userObj?.javaClass}")
-
                                 when (userObj) {
                                     is Map<*, *> -> {
                                         @Suppress("UNCHECKED_CAST")
@@ -106,8 +102,6 @@ class Auth0UsersService(
                                         val picture = userMap["picture"]?.toString()
                                         val createdAt = userMap["created_at"]?.toString()
                                         val updatedAt = userMap["updated_at"]?.toString()
-
-                                        println("✅ Parsed user: id=$userId, name=$name, email=$email")
 
                                         Auth0User(
                                             user_id = userId,
