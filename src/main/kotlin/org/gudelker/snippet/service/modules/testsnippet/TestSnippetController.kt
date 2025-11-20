@@ -6,10 +6,12 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -37,12 +39,12 @@ class TestSnippetController(
         return "Deleted successfully".let { ResponseEntity.ok(it) }
     }
 
-    @PostMapping("/snippetId")
+    @GetMapping("/{snippetId}")
     fun getTestSnippetsBySnippetId(
-        @RequestBody snippetId: String,
+        @RequestParam snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<List<TestSnippetResponseDto>> {
-        val id: UUID = UUID.fromString(snippetId)
+        val id = UUID.fromString(snippetId)
         println("id ESTE ES EL IDDD: $id")
         val testSnippets = testSnippetService.getTestSnippetsBySnippetId(id)
         return ResponseEntity.ok(testSnippets)
