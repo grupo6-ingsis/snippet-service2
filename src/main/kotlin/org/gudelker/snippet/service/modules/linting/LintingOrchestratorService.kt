@@ -62,11 +62,11 @@ class LintingOrchestratorService(
     }
 
     fun lintUserSnippets(userId: String) {
-        println("---------------------------------------${userId}")
+        println("---------------------------------------$userId")
         val snippetsIds = snippetRepository.findByOwnerId(userId).mapNotNull { it.id }
-        println("---------------------------------------${snippetsIds}")
+        println("---------------------------------------$snippetsIds")
         val userLintRules = lintConfigService.getAllRulesFromUser(userId)
-        println("---------------------------------------${userLintRules}")
+        println("---------------------------------------$userLintRules")
         val rulesWithValue =
             userLintRules.map { lintConfig ->
                 RuleNameWithValue(
@@ -74,7 +74,7 @@ class LintingOrchestratorService(
                     value = lintConfig.ruleValue ?: "",
                 )
             }
-        println("---------------------------------------${rulesWithValue}")
+        println("---------------------------------------$rulesWithValue")
         lintSnippets(snippetsIds, rulesWithValue)
     }
 }
