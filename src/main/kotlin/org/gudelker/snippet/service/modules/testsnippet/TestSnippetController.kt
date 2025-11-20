@@ -43,6 +43,7 @@ class TestSnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<List<TestSnippetResponseDto>> {
         val id: UUID = UUID.fromString(snippetId)
+        println("id ESTE ES EL IDDD: $id")
         val testSnippets = testSnippetService.getTestSnippetsBySnippetId(id)
         return ResponseEntity.ok(testSnippets)
     }
