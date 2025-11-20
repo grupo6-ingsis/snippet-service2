@@ -57,6 +57,7 @@ class TestSnippetController(
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<ResultType> {
         val result = testSnippetService.runTestSnippets(testCase, jwt.subject)
+        println(result)
         return ResponseEntity.ok(result)
     }
 }

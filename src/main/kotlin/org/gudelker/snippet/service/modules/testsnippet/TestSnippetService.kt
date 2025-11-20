@@ -69,6 +69,7 @@ class TestSnippetService(
         userId: String,
     ): ResultType {
         val permission = authApiClient.hasPermission(testCase.snippetId, userId)
+        println("Permission: $permission")
         if (permission == null) {
             throw IllegalAccessException("User is not authorized to run test snippets for this snippet")
         }
@@ -85,6 +86,8 @@ class TestSnippetService(
                 snippet.languageVersion.version,
                 testSnippet.input ?: mutableListOf(),
             )
-        return engineApiClient.interpretSnippet(interpretRequest)
+        val result = engineApiClient.interpretSnippet(interpretRequest)
+        println("Interpretation result: $result")
+        return result
     }
 }
