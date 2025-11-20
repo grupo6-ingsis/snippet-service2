@@ -68,6 +68,7 @@ class TestSnippetService(
         testCase: CreateTestSnippetRequest,
         userId: String,
     ): InterpretSnippetResponse {
+        println("Running test snippet for snippetId: ${testCase.snippetId} by userId: $userId")
         val permission = authApiClient.hasPermission(testCase.snippetId, userId)
         println("Permission: $permission")
         if (permission == null) {

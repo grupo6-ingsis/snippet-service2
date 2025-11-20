@@ -56,6 +56,7 @@ class TestSnippetController(
         @RequestBody testCase: CreateTestSnippetRequest,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<InterpretSnippetResponse> {
+        println("Running test snippet for snippetId: ${testCase.snippetId} by userId: ${jwt.subject}")
         val result = testSnippetService.runTestSnippets(testCase, jwt.subject)
         println(result)
         return ResponseEntity.ok(result)

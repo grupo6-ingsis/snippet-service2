@@ -24,7 +24,6 @@ class UsersController(
         @RequestParam(defaultValue = "10") perPage: Int,
     ): ResponseEntity<Auth0UsersResponse> {
         return try {
-
             val managementToken = auth0ManagementTokenService.getManagementToken()
             val result =
                 auth0UsersService.searchUsers(
