@@ -147,4 +147,42 @@ class Auth0UsersService(
             return Auth0UsersResponse(emptyList(), 0, 0, perPage)
         }
     }
+
+    fun getUserById(
+        managementToken: String,
+        userId: String
+    ): Auth0User? {
+        return try {
+            val response = restClient.get()
+                .uri { uriBuilder ->
+                    uriBuilder
+                        .scheme("https")
+                        .host(domain)
+                        .path("/api/v2/users/{userId}")
+                        .build(userId)
+                }
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $managementToken")
+                .retrieve()
+                .body(object : ParameterizedTypeReference<Map<String, Any>>() {})
+
+            if (response == null) {
+                println("⚠️ Auth0 returned null for user $userId")
+                return null
+            }
+
+            Auth0User(
+                user_id = response["user_id"]?.toString() ?: userId,
+                email = response["email"]?.toString(),
+                name = response["name"]?.toString(),
+                nickname = response["nickname"]?.toString(),
+                picture = response["picture"]?.toString(),
+                created_at = response["created_at"]?.toString(),
+                updated_at = response["updated_at"]?.toString()
+            )
+        } catch (e: Exception) {
+            println("❌ Error fetching user $userId from Auth0: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
 }

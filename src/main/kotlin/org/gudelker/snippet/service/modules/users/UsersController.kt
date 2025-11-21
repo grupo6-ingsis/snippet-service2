@@ -1,11 +1,13 @@
 package org.gudelker.snippet.service.modules.users
 
 import org.gudelker.snippet.service.auth.Auth0ManagementTokenService
+import org.gudelker.snippet.service.modules.users.dto.Auth0User
 import org.gudelker.snippet.service.modules.users.dto.Auth0UsersResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -45,6 +47,31 @@ class UsersController(
                     limit = perPage,
                 ),
             )
+        }
+    }
+
+    @GetMapping("/{userId}")
+    fun getUserById(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable userId: String
+    ): ResponseEntity<Auth0User> {
+        return try {
+            val managementToken = auth0ManagementTokenService.getManagementToken()
+            val user = auth0UsersService.getUserById(
+                managementToken = managementToken.access_token,
+                userId = userId
+            )
+
+            if (user != null) {
+                println("✅ Found user: ${user.name}")
+                ResponseEntity.ok(user)
+            } else {
+                ResponseEntity.notFound().build()
+            }
+        } catch (e: Exception) {
+            println("❌ Error getting user: ${e.message}")
+            e.printStackTrace()
+            ResponseEntity.status(500).build()
         }
     }
 }
