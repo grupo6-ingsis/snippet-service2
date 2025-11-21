@@ -123,8 +123,8 @@ class SnippetService(
         }
         parseAndUpdateSnippet(input, snippet, authApiClient)
         snippetRepository.save(snippet)
-        orchestratorLintingService.lintSingleSnippet(UUID.fromString(snippetId), userId)
         updateSnippetAsset(assetApiClient, snippetId, input.content)
+        orchestratorLintingService.lintSingleSnippet(UUID.fromString(snippetId), userId)
         return getUpdateSnippetFromEditorResponse(snippet, input)
     }
 
