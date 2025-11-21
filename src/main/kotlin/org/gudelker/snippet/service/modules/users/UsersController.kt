@@ -53,14 +53,15 @@ class UsersController(
     @GetMapping("/{userId}")
     fun getUserById(
         @AuthenticationPrincipal jwt: Jwt,
-        @PathVariable userId: String
+        @PathVariable userId: String,
     ): ResponseEntity<Auth0User> {
         return try {
             val managementToken = auth0ManagementTokenService.getManagementToken()
-            val user = auth0UsersService.getUserById(
-                managementToken = managementToken.access_token,
-                userId = userId
-            )
+            val user =
+                auth0UsersService.getUserById(
+                    managementToken = managementToken.access_token,
+                    userId = userId,
+                )
 
             if (user != null) {
                 println("✅ Found user: ${user.name}")
