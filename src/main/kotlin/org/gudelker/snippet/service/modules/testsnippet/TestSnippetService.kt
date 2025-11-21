@@ -3,6 +3,7 @@ package org.gudelker.snippet.service.modules.testsnippet
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.EngineApiClient
+import org.gudelker.snippet.service.api.ResultType
 import org.gudelker.snippet.service.modules.interpret.InterpretSnippetRequest
 import org.gudelker.snippet.service.modules.interpret.InterpretSnippetResponse
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
@@ -67,7 +68,7 @@ class TestSnippetService(
     fun runTestSnippets(
         testCase: CreateTestSnippetRequest,
         userId: String,
-    ): InterpretSnippetResponse {
+    ): ResultType {
         println("Running test snippet for snippetId: ${testCase.snippetId} by userId: $userId")
         val permission = authApiClient.hasPermission(testCase.snippetId, userId)
         println("Permission: $permission")
@@ -87,8 +88,27 @@ class TestSnippetService(
                 snippet.languageVersion.version,
                 testSnippet.input ?: mutableListOf(),
             )
-        val result = engineApiClient.interpretSnippet(interpretRequest)
-        println("Interpretation result: $result")
+        val interpretResult = engineApiClient.interpretSnippet(interpretRequest)
+        println("Interpretation result: $interpretResult")
+        val result = checkTestResultOrThrow(testSnippet.expectedOutput, interpretResult)
+        println("Test result: $result")
         return result
+    }
+
+    private fun checkTestResultOrThrow(
+        expected: List<String>?,
+        response: InterpretSnippetResponse,
+    ): ResultType {
+        if (response.resultType != ResultType.SUCCESS) {
+            throw IllegalStateException("Interpretation failed: ${response.resultType}")
+        }
+        val actual = response.results
+        return if ((expected.isNullOrEmpty() && actual.isNullOrEmpty()) ||
+            (expected != null && actual != null && expected == actual)
+        ) {
+            ResultType.SUCCESS
+        } else {
+            ResultType.FAILURE
+        }
     }
 }
