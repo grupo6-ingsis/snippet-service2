@@ -104,12 +104,14 @@ class TestSnippetService(
         }
         val interpretedResult = response.results
         println("Interpretation result: $interpretedResult and expected: $expected")
-        return if ((expected.isNullOrEmpty() && interpretedResult.isEmpty()) ||
-            (expected != null && expected == interpretedResult)
-        ) {
-            ResultType.SUCCESS
-        } else {
-            ResultType.FAILURE
+        if ((expected == null || expected.isEmpty()) && interpretedResult.isEmpty()) {
+            return ResultType.SUCCESS
         }
+        if (expected != null && expected.size == interpretedResult.size) {
+            if (expected.zip(interpretedResult).all { (exp, actual) -> exp == actual }) {
+                return ResultType.SUCCESS
+            }
+        }
+        return ResultType.FAILURE
     }
 }
