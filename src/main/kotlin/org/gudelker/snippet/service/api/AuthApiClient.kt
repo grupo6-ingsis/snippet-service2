@@ -113,4 +113,21 @@ class AuthApiClient(
             .retrieve()
             .body(PermissionType::class.java)
     }
+
+    fun getUsersWithAccessToSnippet(snippetId: String): List<String> {
+        val machineToken = cachedTokenService.getToken()
+
+        return try {
+            restClient.get()
+                .uri("http://authorization:8080/api/permissions/users-with-access/{snippetId}", snippetId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
+                .retrieve()
+                .body(object : ParameterizedTypeReference<List<String>>() {})
+                ?: emptyList()
+        } catch (e: Exception) {
+            println("❌ Error getting users with access to snippet $snippetId: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
 }

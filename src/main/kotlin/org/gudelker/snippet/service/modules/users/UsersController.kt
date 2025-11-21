@@ -1,5 +1,6 @@
 package org.gudelker.snippet.service.modules.users
 
+import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.auth.Auth0ManagementTokenService
 import org.gudelker.snippet.service.modules.users.dto.Auth0User
 import org.gudelker.snippet.service.modules.users.dto.Auth0UsersResponse
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 class UsersController(
     private val auth0ManagementTokenService: Auth0ManagementTokenService,
     private val auth0UsersService: Auth0UsersService,
+    private val authApiClient: AuthApiClient,
 ) {
     @GetMapping("/search")
     fun searchUsers(
@@ -24,6 +26,7 @@ class UsersController(
         @RequestParam(defaultValue = "") query: String,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") perPage: Int,
+        @RequestParam(required = false) snippetId: String?,
     ): ResponseEntity<Auth0UsersResponse> {
         return try {
             val managementToken = auth0ManagementTokenService.getManagementToken()
@@ -35,7 +38,26 @@ class UsersController(
                     perPage = perPage.coerceAtMost(10),
                 )
 
-            ResponseEntity.ok(result)
+            // Si se proporciona snippetId, filtrar usuarios que ya tienen permisos
+            val filteredResult =
+                if (snippetId != null) {
+                    val usersWithAccess = authApiClient.getUsersWithAccessToSnippet(snippetId)
+                    Auth0UsersResponse(
+                        users =
+                            result.users.filter { user ->
+                                !usersWithAccess.contains(user.user_id)
+                            },
+                        total =
+                            result.users.count { user ->
+                                !usersWithAccess.contains(user.user_id)
+                            },
+                        start = result.start,
+                        limit = result.limit,
+                    )
+                } else {
+                    result
+                }
+            ResponseEntity.ok(filteredResult)
         } catch (e: Exception) {
             println("❌ Error searching users: ${e.message}")
             e.printStackTrace()
