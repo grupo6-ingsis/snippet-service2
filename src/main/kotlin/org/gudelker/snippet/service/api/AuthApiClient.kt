@@ -105,9 +105,9 @@ class AuthApiClient(
                     .scheme("http")
                     .host("authorization")
                     .port(8080)
-                    .path("/api/permissions/{$snippetId}")
+                    .path("/api/permissions/$snippetId")
                     .queryParam("userId", userId)
-                    .build()
+                    .build(false)
             }
             .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
             .retrieve()
