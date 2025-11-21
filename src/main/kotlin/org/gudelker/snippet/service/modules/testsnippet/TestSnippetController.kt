@@ -1,6 +1,7 @@
 package org.gudelker.snippet.service.modules.testsnippet
 
 import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.testsnippet.dto.CreateTestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.dto.TestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
 import org.springframework.http.ResponseEntity
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -25,9 +27,17 @@ class TestSnippetController(
     fun createTestSnippet(
         @RequestBody request: CreateTestSnippetRequest,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<TestSnippet> {
+    ): ResponseEntity<CreateTestSnippetResponseDto> {
         val created = testSnippetService.createTestSnippet(request, jwt.subject)
-        return ResponseEntity.ok(created)
+        return ResponseEntity.ok(
+            CreateTestSnippetResponseDto(
+                id = created.id.toString(),
+                snippetId = created.snippet.id.toString(),
+                name = created.name,
+                input = created.input,
+                expectedOutput = created.expectedOutput,
+            ),
+        )
     }
 
     @DeleteMapping("/{id}")
@@ -60,5 +70,23 @@ class TestSnippetController(
         val result = testSnippetService.runTestSnippets(testCase, jwt.subject)
         println(result)
         return ResponseEntity.ok(result)
+    }
+
+    @PutMapping("/update/{id}")
+    fun updateTestSnippet(
+        @PathVariable id: String,
+        @RequestBody request: CreateTestSnippetRequest,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<CreateTestSnippetResponseDto> {
+        val updated = testSnippetService.updateTestSnippet(id, request, jwt.subject)
+        return ResponseEntity.ok(
+            CreateTestSnippetResponseDto(
+                id = updated.id.toString(),
+                snippetId = updated.snippet.id.toString(),
+                name = updated.name,
+                input = updated.input,
+                expectedOutput = updated.expectedOutput,
+            ),
+        )
     }
 }

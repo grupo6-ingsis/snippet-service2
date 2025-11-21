@@ -114,4 +114,33 @@ class TestSnippetService(
         }
         return ResultType.FAILURE
     }
+
+    fun updateTestSnippet(
+        id: String,
+        request: CreateTestSnippetRequest,
+        userId: String,
+    ): TestSnippet {
+        val testSnippet =
+            testSnippetRepository.findById(UUID.fromString(id))
+                .orElseThrow { IllegalArgumentException("Test not found") }
+        val snippet =
+            snippetRepository.findById(UUID.fromString(request.snippetId))
+                .orElseThrow { IllegalArgumentException("Snippet not found") }
+        val isAuthorized =
+            authApiClient.isUserAuthorizedToWriteSnippet(
+                snippetId = request.snippetId,
+                userId = userId,
+            )
+        if (!isAuthorized) {
+            throw IllegalAccessException("User is not authorized to update test snippets for this snippet")
+        }
+        testSnippet.apply {
+            name = request.name
+            input = request.input
+            expectedOutput = request.expectedOutput
+            this.snippet = snippet
+        }
+        val updated = testSnippetRepository.save(testSnippet)
+        return updated
+    }
 }
