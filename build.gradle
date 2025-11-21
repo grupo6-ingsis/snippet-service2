@@ -44,6 +44,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	testImplementation "io.mockk:mockk:1.13.10"
 
 }
 
@@ -107,4 +108,3 @@ tasks.withType(JacocoCoverageVerification) {
 }
 
 check.dependsOn jacocoTestCoverageVerification
-
