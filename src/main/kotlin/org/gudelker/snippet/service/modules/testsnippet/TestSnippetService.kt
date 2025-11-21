@@ -103,6 +103,7 @@ class TestSnippetService(
             throw IllegalStateException("Interpretation failed: ${response.resultType}")
         }
         val interpretedResult = response.results
+        println("Interpretation result: $interpretedResult and expected: $expected")
         return if ((expected.isNullOrEmpty() && interpretedResult.isEmpty()) ||
             (expected != null && expected == interpretedResult)
         ) {
