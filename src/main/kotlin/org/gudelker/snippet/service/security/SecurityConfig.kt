@@ -14,6 +14,13 @@ class SecurityConfig {
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers("/snippets/**").authenticated()
+                    .requestMatchers("/lintconfig/**").authenticated()
+                    .requestMatchers("/format/**").authenticated()
+                    .requestMatchers("/testsnippet/**").authenticated()
+                    .requestMatchers("/language/**").authenticated()
+                    .requestMatchers("/users/**").authenticated()
+                    .requestMatchers("/language-version/**").authenticated()
+                    .requestMatchers("/formatconfig/**").authenticated()
                     .anyRequest().permitAll()
             }
             .oauth2ResourceServer { it.jwt {} }

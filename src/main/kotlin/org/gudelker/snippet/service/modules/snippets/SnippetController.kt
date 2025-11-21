@@ -3,6 +3,7 @@ package org.gudelker.snippet.service.modules.snippets
 import jakarta.validation.Valid
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.auth.CachedTokenService
+import org.gudelker.snippet.service.modules.formatting.FormattingOrchestratorService
 import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
 import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto
@@ -38,6 +39,7 @@ class SnippetController(
     private val cachedTokenService: CachedTokenService,
     private val restClient: RestClient,
     private val assetApiClient: AssetApiClient,
+    private val formattingOrchestratorService: FormattingOrchestratorService,
 ) {
     @GetMapping("/all")
     fun getAllSnippets(): List<Snippet> {

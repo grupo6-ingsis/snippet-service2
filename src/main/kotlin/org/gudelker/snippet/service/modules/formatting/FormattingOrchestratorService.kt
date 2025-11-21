@@ -45,10 +45,10 @@ class FormattingOrchestratorService(
         }
     }
 
-    private fun formatSingleSnippet(
+    fun formatSingleSnippet(
         snippetId: UUID,
         userId: String,
-    ) {
+    ): String {
         val userFormatRules = formatConfigService.getAllRulesFromUser(userId)
         val rulesWithValue =
             userFormatRules.map { formatConfig ->
@@ -58,6 +58,7 @@ class FormattingOrchestratorService(
                 )
             }
         formatSnippets(listOf(snippetId), rulesWithValue)
+        return "Formatting request published for snippet $snippetId"
     }
 
     fun formatUserSnippets(userId: String) {

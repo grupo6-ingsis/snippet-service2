@@ -2,6 +2,8 @@ package org.gudelker.snippet.service.modules.langver
 
 import org.gudelker.snippet.service.modules.language.LanguageRepository
 import org.gudelker.snippet.service.modules.langver.dto.LanguageVersionDto
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -16,6 +18,7 @@ class LanguageVersionController(
     @GetMapping("/supported")
     fun getSupportedLanguageVersions(
         @RequestParam languageName: String,
+        @AuthenticationPrincipal jwt: Jwt,
     ): LanguageVersionDto {
         val language =
             languageRepository.findByName(languageName)
