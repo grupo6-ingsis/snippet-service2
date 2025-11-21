@@ -123,6 +123,7 @@ class SnippetService(
         }
         parseAndUpdateSnippet(input, snippet, authApiClient)
         snippetRepository.save(snippet)
+        orchestratorLintingService.lintSingleSnippet(UUID.fromString(snippetId), userId)
         updateSnippetAsset(assetApiClient, snippetId, input.content)
         return getUpdateSnippetFromEditorResponse(snippet, input)
     }
@@ -248,10 +249,15 @@ class SnippetService(
         snippetId: String,
         userId: String,
     ) {
-        val snippetUUID = UUID.fromString(snippetId)
+        val snippetUUID =
+            try {
+                UUID.fromString(snippetId)
+            } catch (ex: Exception) {
+                throw IllegalArgumentException("Invalid snippetId format: $snippetId", ex)
+            }
         val snippet =
             snippetRepository.findById(snippetUUID)
-                .orElseThrow { IllegalArgumentException("Snippet not found") }
+                .orElseThrow { RuntimeException("Snippet not found") }
 
         if (snippet.ownerId != userId) {
             throw AccessDeniedException("Only the owner can delete the snippet")
