@@ -83,8 +83,18 @@ tasks.withType(JacocoReport) {
 			fileTree(dir: it, exclude: [
 					'**/model/**',
 					'**/config/**',
+					'**/controller/**',
+					'**/controllers/**',
+					'**/repository/**',
+					'**/repositories/**',
+					'**/*Config.*',
+					'**/*Controller.*',
+					'**/*Repository.*',
+					'**/*Application.*',
+					'**/*ApiClient.*',
 					'**/*Main*.*',
 					'**/*Main$*.*',
+					'**/*Seeder.*',
 			])
 		}))
 	}
@@ -94,12 +104,27 @@ tasks.withType(JacocoCoverageVerification) {
 	violationRules {
 		rule {
 			limit {
-				minimum = 0.0
+				minimum = 0.6
 			}
 		}
 		rule {
 			element = 'CLASS'
-			excludes = ['**/model/**', '**/config/**', '**/*Main*']
+			excludes = [
+				'**/model/**',
+				'**/config/**',
+				'**/controller/**',
+				'**/controllers/**',
+				'**/repository/**',
+				'**/repositories/**',
+				'**/*Config',
+				'**/*Controller',
+				'**/*Repository',
+				'**/*Application',
+				'**/*ApiClient',
+                '**/*Auth0UsersService*',
+				'**/*Main*',
+				'**/*Seeder',
+			]
 			limit {
 				minimum = 0.0
 			}

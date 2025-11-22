@@ -21,13 +21,15 @@ import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetF
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpStatus
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.web.client.HttpClientErrorException
 import java.time.OffsetDateTime
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
 
-class SnippetServiceABMTest {
+class SnippetServiceABMTests {
     private lateinit var snippetRepository: SnippetRepository
     private lateinit var authApiClient: AuthApiClient
     private lateinit var assetApiClient: AssetApiClient
@@ -291,7 +293,7 @@ class SnippetServiceABMTest {
                     description = "New Desc",
                     content = "new content",
                 )
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.of(snippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
             every { authApiClient.isUserAuthorizedToWriteSnippet(snippetId, "user-123") } returns true
             every { engineApiClient.parseSnippet(any()) } returns ResultType.SUCCESS
             every { snippetRepository.save(any()) } returns snippet
@@ -326,7 +328,7 @@ class SnippetServiceABMTest {
                     description = null,
                     content = null,
                 )
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.of(snippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
             every { authApiClient.isUserAuthorizedToWriteSnippet(snippetId, "user-123") } returns false
             try {
                 snippetService.updateSnippetFromEditor(input, jwt, snippetId)
@@ -355,7 +357,7 @@ class SnippetServiceABMTest {
                     description = null,
                     content = "bad content",
                 )
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.of(snippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
             every { authApiClient.isUserAuthorizedToWriteSnippet(snippetId, "user-123") } returns true
             every { engineApiClient.parseSnippet(any()) } returns ResultType.FAILURE
             try {
@@ -383,6 +385,14 @@ class SnippetServiceABMTest {
                 assert(e.message?.contains("At least one attribute") == true)
             }
         }
+
+        @Test
+        fun `should create UpdateSnippetFromEditorInput with default values`() {
+            val input = org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput()
+            assertEquals(null, input.title)
+            assertEquals(null, input.description)
+            assertEquals(null, input.content)
+        }
     }
 
     @Nested
@@ -400,7 +410,7 @@ class SnippetServiceABMTest {
                     description = "Desc",
                     languageVersion = languageVersion,
                 )
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.of(snippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
             every { assetApiClient.deleteAsset("snippets", snippetId) } returns Unit
             every { snippetRepository.delete(snippet) } returns Unit
 
@@ -422,7 +432,7 @@ class SnippetServiceABMTest {
                     description = "Desc",
                     languageVersion = languageVersion,
                 )
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.of(snippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
             try {
                 snippetService.deleteSnippet(snippetId, userId)
                 assert(false) { "Expected exception not thrown" }
@@ -445,7 +455,7 @@ class SnippetServiceABMTest {
         @Test
         fun `deleteSnippet should throw if snippet not found`() {
             val snippetId = UUID.randomUUID().toString()
-            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns java.util.Optional.empty()
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.empty()
             try {
                 snippetService.deleteSnippet(snippetId, "user-123")
                 assert(false) { "Expected exception not thrown" }
@@ -466,8 +476,27 @@ class SnippetServiceABMTest {
             val languageKotlin = mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
             val languagePs = mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Printscript" }
             val snippet1 =
-                Snippet(id1, "user-123", "Hello World", "desc1", OffsetDateTime.now(), OffsetDateTime.now(), null, languageKotlin)
-            val snippet2 = Snippet(id2, "user-123", "Bye World", "desc2", OffsetDateTime.now(), OffsetDateTime.now(), null, languagePs)
+                Snippet(
+                    id1,
+                    "user-123",
+                    "Hello World",
+                    "desc1",
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    null,
+                    languageKotlin,
+                )
+            val snippet2 =
+                Snippet(
+                    id2,
+                    "user-123",
+                    "Bye World",
+                    "desc2",
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    null,
+                    languagePs,
+                )
             every { authApiClient.getSnippetsByAccessType("user-123", any()) } returns listOf(id1, id2)
             every { snippetRepository.findAllById(any()) } returns listOf(snippet1, snippet2)
             every { lintConfigService.getAllRulesFromUser("user-123") } returns emptyList()
@@ -520,7 +549,11 @@ class SnippetServiceABMTest {
                     null,
                     langPs,
                 )
-            every { authApiClient.getSnippetsByAccessType("user-123", any()) } returns listOf(snippet1.id!!, snippet2.id!!)
+            every { authApiClient.getSnippetsByAccessType("user-123", any()) } returns
+                listOf(
+                    snippet1.id!!,
+                    snippet2.id!!,
+                )
             every { snippetRepository.findAllById(any()) } returns listOf(snippet1, snippet2)
             every { lintConfigService.getAllRulesFromUser("user-123") } returns emptyList()
             every { lintResultService.snippetPassesLinting(any()) } returns true
@@ -640,142 +673,289 @@ class SnippetServiceABMTest {
             assertEquals("B", pagePaginated.content[1].title)
             assertEquals(3, pagePaginated.totalElements)
         }
-    }
 
-    @Nested
-    inner class ShareSnippetTests {
         @Test
-        fun `shareSnippet should succeed when user is owner`() {
-            val ownerId = "user-123"
-            val sharedUserId = "user-456"
-            val snippetId = UUID.randomUUID()
-            val languageVersion = mockk<LanguageVersion>(relaxed = true)
-            val snippet =
-                Snippet(
-                    id = snippetId,
-                    ownerId = ownerId,
-                    title = "Test Snippet",
-                    description = "desc",
-                    languageVersion = languageVersion,
+        fun `getSnippetsByFilter should throw FORBIDDEN if userId is empty`() {
+            val jwt = mockk<Jwt> { every { subject } returns "" }
+            try {
+                snippetService.getSnippetsByFilter(
+                    jwt, 0, 10, AccessType.OWNER, "", "", null, SortByType.NAME, DirectionType.ASC,
                 )
-            every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
-            every { authApiClient.authorizeSnippet(snippetId, any()) } returns mockk<AuthorizeResponseDto>()
-            val result = snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
-            assertEquals(sharedUserId, result.sharedUserId)
-            assertEquals(ownerId, result.userId)
-            assertEquals(snippetId, result.snippetId)
+                assert(false) { "Expected HttpClientErrorException not thrown" }
+            } catch (e: HttpClientErrorException) {
+                assertEquals(HttpStatus.FORBIDDEN, e.statusCode)
+                assert(e.message?.contains("User ID is missing in JWT") == true)
+            }
         }
 
         @Test
-        fun `shareSnippet should throw if user is not owner`() {
-            val ownerId = "user-123"
-            val sharedUserId = "user-456"
-            val snippetId = UUID.randomUUID()
-            val languageVersion = mockk<LanguageVersion>(relaxed = true)
-            val snippet =
-                Snippet(
-                    id = snippetId,
-                    ownerId = "other-user",
-                    title = "Test Snippet",
-                    description = "desc",
-                    languageVersion = languageVersion,
+        fun `getSnippetsByFilter should return empty page if getSnippetsByAccessType throws`() {
+            val jwt = mockk<Jwt> { every { subject } returns "user-err" }
+            every { authApiClient.getSnippetsByAccessType("user-err", any()) } throws RuntimeException("fail")
+            val page =
+                snippetService.getSnippetsByFilter(
+                    jwt, 0, 10, AccessType.OWNER, "", "", null, SortByType.NAME, DirectionType.ASC,
                 )
-            every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
-            try {
-                snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
-                assert(false) { "Expected exception not thrown" }
-            } catch (e: Exception) {
-                assert(e.message?.contains("Only the owner can share the snippet") == true)
-            }
+            assertEquals(0, page.content.size)
+            assertEquals(0, page.totalElements)
         }
 
         @Test
-        fun `shareSnippet should throw if snippet not found`() {
-            val ownerId = "user-123"
-            val sharedUserId = "user-456"
-            val snippetId = UUID.randomUUID()
-            every { snippetRepository.findById(snippetId) } returns java.util.Optional.empty()
-            try {
-                snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
-                assert(false) { "Expected exception not thrown" }
-            } catch (e: Exception) {
-                assert(e.message?.contains("Snippet not found") == true)
+        fun `getSnippetsByFilter should return empty page if getSnippetsByAccessType returns empty`() {
+            val jwt = mockk<Jwt> { every { subject } returns "user-empty" }
+            every { authApiClient.getSnippetsByAccessType("user-empty", any()) } returns emptyList()
+            val page =
+                snippetService.getSnippetsByFilter(
+                    jwt, 0, 10, AccessType.OWNER, "", "", null, SortByType.NAME, DirectionType.ASC,
+                )
+            assertEquals(0, page.content.size)
+            assertEquals(0, page.totalElements)
+        }
+
+        @Nested
+        inner class ShareSnippetTests {
+            @Test
+            fun `shareSnippet should succeed when user is owner`() {
+                val ownerId = "user-123"
+                val sharedUserId = "user-456"
+                val snippetId = UUID.randomUUID()
+                val languageVersion = mockk<LanguageVersion>(relaxed = true)
+                val snippet =
+                    Snippet(
+                        id = snippetId,
+                        ownerId = ownerId,
+                        title = "Test Snippet",
+                        description = "desc",
+                        languageVersion = languageVersion,
+                    )
+                every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
+                every { authApiClient.authorizeSnippet(snippetId, any()) } returns mockk<AuthorizeResponseDto>()
+                val result = snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
+                assertEquals(sharedUserId, result.sharedUserId)
+                assertEquals(ownerId, result.userId)
+                assertEquals(snippetId, result.snippetId)
+            }
+
+            @Test
+            fun `shareSnippet should throw if user is not owner`() {
+                val ownerId = "user-123"
+                val sharedUserId = "user-456"
+                val snippetId = UUID.randomUUID()
+                val languageVersion = mockk<LanguageVersion>(relaxed = true)
+                val snippet =
+                    Snippet(
+                        id = snippetId,
+                        ownerId = "other-user",
+                        title = "Test Snippet",
+                        description = "desc",
+                        languageVersion = languageVersion,
+                    )
+                every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
+                try {
+                    snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
+                    assert(false) { "Expected exception not thrown" }
+                } catch (e: Exception) {
+                    assert(e.message?.contains("Only the owner can share the snippet") == true)
+                }
+            }
+
+            @Test
+            fun `shareSnippet should throw if snippet not found`() {
+                val ownerId = "user-123"
+                val sharedUserId = "user-456"
+                val snippetId = UUID.randomUUID()
+                every { snippetRepository.findById(snippetId) } returns Optional.empty()
+                try {
+                    snippetService.shareSnippet(sharedUserId, snippetId, ownerId)
+                    assert(false) { "Expected exception not thrown" }
+                } catch (e: Exception) {
+                    assert(e.message?.contains("Snippet not found") == true)
+                }
+            }
+        }
+
+        @Nested
+        inner class GetSnippetsByUserIdTests {
+            @Test
+            fun `getSnippetsByUserId should return all snippets for user`() {
+                val userId = "user-123"
+                val languageVersion = mockk<LanguageVersion>(relaxed = true)
+                val snippet1 =
+                    Snippet(
+                        UUID.randomUUID(),
+                        userId,
+                        "A",
+                        "desc1",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                val snippet2 =
+                    Snippet(
+                        UUID.randomUUID(),
+                        userId,
+                        "B",
+                        "desc2",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                every { snippetRepository.findByOwnerId(userId) } returns listOf(snippet1, snippet2)
+                val result = snippetService.getSnippetsByUserId(userId)
+                assertEquals(2, result.size)
+                assert(result.all { it.ownerId == userId })
+            }
+
+            @Test
+            fun `getSnippetsByUserId should return empty list if user has no snippets`() {
+                val userId = "user-123"
+                every { snippetRepository.findByOwnerId(userId) } returns emptyList()
+                val result = snippetService.getSnippetsByUserId(userId)
+                assertEquals(0, result.size)
+            }
+        }
+
+        @Nested
+        inner class GetAllAndByIdTests {
+            @Test
+            fun `getAllSnippets should return all snippets`() {
+                val languageVersion =
+                    mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
+                val snippet1 =
+                    Snippet(
+                        UUID.randomUUID(),
+                        "user-123",
+                        "A",
+                        "desc1",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                val snippet2 =
+                    Snippet(
+                        UUID.randomUUID(),
+                        "user-456",
+                        "B",
+                        "desc2",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                every { snippetRepository.findAll() } returns listOf(snippet1, snippet2)
+                val result = snippetService.getAllSnippets()
+                assertEquals(2, result.size)
+                assert(result.containsAll(listOf(snippet1, snippet2)))
+            }
+
+            @Test
+            fun `getAllSnippets should return empty list if no snippets`() {
+                every { snippetRepository.findAll() } returns emptyList()
+                val result = snippetService.getAllSnippets()
+                assertEquals(0, result.size)
+            }
+
+            @Test
+            fun `getSnippetById should return snippet with compliance`() {
+                val snippetId = UUID.randomUUID()
+                val languageVersion =
+                    mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
+                val snippet =
+                    Snippet(
+                        snippetId,
+                        "user-123",
+                        "A",
+                        "desc1",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
+                every {
+                    lintResultService.getSnippetLintComplianceType(snippetId)
+                } returns org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT
+                val result = snippetService.getSnippetById(snippetId.toString())
+                assertEquals(snippetId.toString(), result.id)
+                assertEquals("A", result.title)
+                assertEquals(
+                    org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT,
+                    result.compliance,
+                )
+            }
+
+            @Test
+            fun `getSnippetById should throw if snippet not found`() {
+                val snippetId = UUID.randomUUID()
+                every { snippetRepository.findById(snippetId) } returns Optional.empty()
+                try {
+                    snippetService.getSnippetById(snippetId.toString())
+                    assert(false) { "Expected exception not thrown" }
+                } catch (e: Exception) {
+                    assert(e.message?.contains("Snippet not found") == true)
+                }
+            }
+
+            @Test
+            fun `getSnippetContentDto should return content and snippet dto`() {
+                val snippetId = UUID.randomUUID()
+                val languageVersion = mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
+                val snippet =
+                    Snippet(
+                        snippetId,
+                        "user-123",
+                        "Title",
+                        "desc",
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        null,
+                        languageVersion,
+                    )
+                val compliance = org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT
+                val content = "fun main() = println(\"Hello\")"
+                every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
+                every { lintResultService.getSnippetLintComplianceType(snippetId) } returns compliance
+                every { assetApiClient.getAsset("snippets", snippetId.toString()) } returns content
+                val snippetWithCompliance =
+                    org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto(
+                        id = snippetId.toString(),
+                        title = snippet.title,
+                        description = snippet.description,
+                        ownerId = snippet.ownerId,
+                        languageVersion = snippet.languageVersion,
+                        created = snippet.created,
+                        updated = snippet.updated,
+                        compliance = compliance,
+                    )
+                val snippetContentDto =
+                    org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto(
+                        content = content,
+                        snippet = snippetWithCompliance,
+                    )
+                // Simula el flujo del controller/servicio
+                val resultSnippet = snippetService.getSnippetById(snippetId.toString())
+                val resultContent = assetApiClient.getAsset("snippets", snippetId.toString())
+                val resultDto = org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto(resultContent, resultSnippet)
+                assertEquals(snippetContentDto, resultDto)
+                assertEquals(content, resultDto.content)
+                assertEquals(snippetWithCompliance, resultDto.snippet)
             }
         }
     }
 
-    @Nested
-    inner class GetSnippetsByUserIdTests {
-        @Test
-        fun `getSnippetsByUserId should return all snippets for user`() {
-            val userId = "user-123"
-            val languageVersion = mockk<LanguageVersion>(relaxed = true)
-            val snippet1 =
-                Snippet(UUID.randomUUID(), userId, "A", "desc1", OffsetDateTime.now(), OffsetDateTime.now(), null, languageVersion)
-            val snippet2 =
-                Snippet(UUID.randomUUID(), userId, "B", "desc2", OffsetDateTime.now(), OffsetDateTime.now(), null, languageVersion)
-            every { snippetRepository.findByOwnerId(userId) } returns listOf(snippet1, snippet2)
-            val result = snippetService.getSnippetsByUserId(userId)
-            assertEquals(2, result.size)
-            assert(result.all { it.ownerId == userId })
-        }
-
-        @Test
-        fun `getSnippetsByUserId should return empty list if user has no snippets`() {
-            val userId = "user-123"
-            every { snippetRepository.findByOwnerId(userId) } returns emptyList()
-            val result = snippetService.getSnippetsByUserId(userId)
-            assertEquals(0, result.size)
-        }
-    }
-
-    @Nested
-    inner class GetAllAndByIdTests {
-        @Test
-        fun `getAllSnippets should return all snippets`() {
-            val languageVersion = mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
-            val snippet1 =
-                Snippet(UUID.randomUUID(), "user-123", "A", "desc1", OffsetDateTime.now(), OffsetDateTime.now(), null, languageVersion)
-            val snippet2 =
-                Snippet(UUID.randomUUID(), "user-456", "B", "desc2", OffsetDateTime.now(), OffsetDateTime.now(), null, languageVersion)
-            every { snippetRepository.findAll() } returns listOf(snippet1, snippet2)
-            val result = snippetService.getAllSnippets()
-            assertEquals(2, result.size)
-            assert(result.containsAll(listOf(snippet1, snippet2)))
-        }
-
-        @Test
-        fun `getAllSnippets should return empty list if no snippets`() {
-            every { snippetRepository.findAll() } returns emptyList()
-            val result = snippetService.getAllSnippets()
-            assertEquals(0, result.size)
-        }
-
-        @Test
-        fun `getSnippetById should return snippet with compliance`() {
-            val snippetId = UUID.randomUUID()
-            val languageVersion = mockk<LanguageVersion>(relaxed = true) { every { language.name } returns "Kotlin" }
-            val snippet = Snippet(snippetId, "user-123", "A", "desc1", OffsetDateTime.now(), OffsetDateTime.now(), null, languageVersion)
-            every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
-            every {
-                lintResultService.getSnippetLintComplianceType(snippetId)
-            } returns org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT
-            val result = snippetService.getSnippetById(snippetId.toString())
-            assertEquals(snippetId.toString(), result.id)
-            assertEquals("A", result.title)
-            assertEquals(org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT, result.compliance)
-        }
-
-        @Test
-        fun `getSnippetById should throw if snippet not found`() {
-            val snippetId = UUID.randomUUID()
-            every { snippetRepository.findById(snippetId) } returns Optional.empty()
-            try {
-                snippetService.getSnippetById(snippetId.toString())
-                assert(false) { "Expected exception not thrown" }
-            } catch (e: Exception) {
-                assert(e.message?.contains("Snippet not found") == true)
-            }
-        }
+    @Test
+    fun `should create and use AuthorizeResponseDto correctly`() {
+        val dto =
+            AuthorizeResponseDto(
+                success = true,
+                message = "Authorized",
+                permission = "WRITE",
+            )
+        assertEquals(true, dto.success)
+        assertEquals("Authorized", dto.message)
+        assertEquals("WRITE", dto.permission)
     }
 }

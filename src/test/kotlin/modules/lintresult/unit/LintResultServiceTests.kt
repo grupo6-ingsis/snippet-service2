@@ -192,4 +192,60 @@ class LintResultServiceTests {
             assertFalse(result)
         }
     }
+
+    @Nested
+    inner class LintErrorTests {
+        @Test
+        fun `should create LintError with message, line and column`() {
+            val error =
+                LintError(
+                    message = "Syntax error",
+                    line = 3,
+                    columnNumber = 15,
+                )
+            assertEquals("Syntax error", error.message)
+            assertEquals(3, error.line)
+            assertEquals(15, error.columnNumber)
+        }
+
+        @Test
+        fun `should allow LintError with empty message and zero line column`() {
+            val error =
+                LintError(
+                    message = "",
+                    line = 0,
+                    columnNumber = 0,
+                )
+            assertEquals("", error.message)
+            assertEquals(0, error.line)
+            assertEquals(0, error.columnNumber)
+        }
+
+        @Test
+        fun `should allow LintError with negative line and column`() {
+            val error =
+                LintError(
+                    message = "Negative position",
+                    line = -1,
+                    columnNumber = -5,
+                )
+            assertEquals("Negative position", error.message)
+            assertEquals(-1, error.line)
+            assertEquals(-5, error.columnNumber)
+        }
+
+        @Test
+        fun `should have null id before persisting LintResult`() {
+            val lintResult = LintResult()
+            assertNull(lintResult.id)
+        }
+
+        @Test
+        fun `should create LintError with default values`() {
+            val error = LintError()
+            assertEquals("", error.message)
+            assertEquals(0, error.line)
+            assertEquals(0, error.columnNumber)
+        }
+    }
 }
