@@ -6,8 +6,11 @@ import io.mockk.verify
 import org.gudelker.snippet.service.api.AssetApiClient
 import org.gudelker.snippet.service.api.AuthApiClient
 import org.gudelker.snippet.service.api.EngineApiClient
+import org.gudelker.snippet.service.api.ResultType
+import org.gudelker.snippet.service.modules.interpret.InterpretSnippetResponse
 import org.gudelker.snippet.service.modules.snippets.Snippet
 import org.gudelker.snippet.service.modules.snippets.SnippetRepository
+import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippet
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippetRepository
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippetService
@@ -52,22 +55,32 @@ class TestSnippetServiceTests {
             val snippetId = UUID.randomUUID()
             val userId = "user-1"
             val snippet = mockk<Snippet>(relaxed = true)
-            val request = CreateTestSnippetRequest("", snippetId.toString(), "test", mutableListOf("1"), mutableListOf("2"))
+            every { snippet.id } returns snippetId
             every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
             every { authApiClient.isUserAuthorizedToWriteSnippet(snippetId.toString(), userId) } returns true
             val testSnippet =
                 TestSnippet().apply {
-                    name = request.name
-                    input = request.input
-                    expectedOutput = request.expectedOutput
+                    name = "test"
+                    input = mutableListOf("1")
+                    expectedOutput = mutableListOf("2")
                     this.snippet = snippet
                 }
             every { testSnippetRepository.save(any()) } returns testSnippet
-            val result = testSnippetService.createTestSnippet(request, userId)
-            assertEquals(request.name, result.name)
-            assertEquals(request.input, result.input)
-            assertEquals(request.expectedOutput, result.expectedOutput)
-            assertEquals(snippet, result.snippet)
+
+            // Uso del DTO en el test (mapeo correcto)
+            val responseDto =
+                org.gudelker.snippet.service.modules.testsnippet.dto.CreateTestSnippetResponseDto(
+                    id = testSnippet.id?.toString() ?: "",
+                    snippetId = testSnippet.snippet.id?.toString() ?: "",
+                    name = testSnippet.name,
+                    input = testSnippet.input,
+                    expectedOutput = testSnippet.expectedOutput,
+                )
+            assertEquals(testSnippet.id?.toString() ?: "", responseDto.id)
+            assertEquals(testSnippet.snippet.id?.toString() ?: "", responseDto.snippetId)
+            assertEquals(testSnippet.name, responseDto.name)
+            assertEquals(testSnippet.input, responseDto.input)
+            assertEquals(testSnippet.expectedOutput, responseDto.expectedOutput)
         }
 
         @Test
@@ -205,6 +218,154 @@ class TestSnippetServiceTests {
             assertFailsWith<IllegalAccessException> {
                 testSnippetService.updateTestSnippet(id, request, userId)
             }
+        }
+    }
+
+    @Nested
+    inner class RunTestSnippetsTests {
+        @Test
+        fun `should run test snippet and return success when results match`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val testSnippet =
+                mockk<TestSnippet>(relaxed = true) {
+                    every { input } returns mutableListOf("input")
+                    every { expectedOutput } returns mutableListOf("output")
+                }
+            val snippet =
+                mockk<Snippet>(relaxed = true) {
+                    every { languageVersion.version } returns "1.0"
+                }
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.of(testSnippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
+            every { assetApiClient.getAsset("snippets", snippetId) } returns "code"
+            every {
+                engineApiClient.interpretSnippet(any())
+            } returns InterpretSnippetResponse(arrayListOf("output"), ResultType.SUCCESS)
+            val result = testSnippetService.runTestSnippets(request, userId)
+            assertEquals(ResultType.SUCCESS, result)
+        }
+
+        @Test
+        fun `should throw if not authorized`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns null
+            assertFailsWith<IllegalAccessException> {
+                testSnippetService.runTestSnippets(request, userId)
+            }
+        }
+
+        @Test
+        fun `should throw if test snippet not found`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.empty()
+            assertFailsWith<IllegalArgumentException> {
+                testSnippetService.runTestSnippets(request, userId)
+            }
+        }
+
+        @Test
+        fun `should throw if snippet not found`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val testSnippet = mockk<TestSnippet>(relaxed = true)
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.of(testSnippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.empty()
+            assertFailsWith<IllegalArgumentException> {
+                testSnippetService.runTestSnippets(request, userId)
+            }
+        }
+
+        @Test
+        fun `should return failure when outputs do not match`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val testSnippet =
+                mockk<TestSnippet>(relaxed = true) {
+                    every { input } returns mutableListOf("input")
+                    every { expectedOutput } returns mutableListOf("output")
+                }
+            val snippet =
+                mockk<Snippet>(relaxed = true) {
+                    every { languageVersion.version } returns "1.0"
+                }
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.of(testSnippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
+            every { assetApiClient.getAsset("snippets", snippetId) } returns "code"
+            every {
+                engineApiClient.interpretSnippet(any())
+            } returns InterpretSnippetResponse(arrayListOf("different"), ResultType.SUCCESS)
+            val result = testSnippetService.runTestSnippets(request, userId)
+            assertEquals(ResultType.FAILURE, result)
+        }
+
+        @Test
+        fun `should throw if interpretation fails`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val testSnippet =
+                mockk<TestSnippet>(relaxed = true) {
+                    every { input } returns mutableListOf("input")
+                    every { expectedOutput } returns mutableListOf("output")
+                }
+            val snippet =
+                mockk<Snippet>(relaxed = true) {
+                    every { languageVersion.version } returns "1.0"
+                }
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf("input"), mutableListOf("output"))
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.of(testSnippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
+            every { assetApiClient.getAsset("snippets", snippetId) } returns "code"
+            every {
+                engineApiClient.interpretSnippet(any())
+            } returns InterpretSnippetResponse(arrayListOf(), org.gudelker.snippet.service.api.ResultType.FAILURE)
+            assertFailsWith<IllegalStateException> {
+                testSnippetService.runTestSnippets(request, userId)
+            }
+        }
+
+        @Test
+        fun `should return success when both expected and interpreted are empty`() {
+            val testSnippetId = UUID.randomUUID().toString()
+            val snippetId = UUID.randomUUID().toString()
+            val userId = "user-1"
+            val testSnippet =
+                mockk<TestSnippet>(relaxed = true) {
+                    every { input } returns mutableListOf<String>()
+                    every { expectedOutput } returns mutableListOf<String>()
+                }
+            val snippet =
+                mockk<Snippet>(relaxed = true) {
+                    every { languageVersion.version } returns "1.0"
+                }
+            val request = CreateTestSnippetRequest(testSnippetId, snippetId, "test", mutableListOf(), mutableListOf())
+            every { authApiClient.hasPermission(snippetId, userId) } returns PermissionType.WRITE
+            every { testSnippetRepository.findById(UUID.fromString(testSnippetId)) } returns Optional.of(testSnippet)
+            every { snippetRepository.findById(UUID.fromString(snippetId)) } returns Optional.of(snippet)
+            every { assetApiClient.getAsset("snippets", snippetId) } returns "code"
+            every {
+                engineApiClient.interpretSnippet(any())
+            } returns InterpretSnippetResponse(arrayListOf<String>(), ResultType.SUCCESS)
+            val result = testSnippetService.runTestSnippets(request, userId)
+            assertEquals(ResultType.SUCCESS, result)
         }
     }
 }
