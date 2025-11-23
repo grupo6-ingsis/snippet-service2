@@ -14,10 +14,14 @@ import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfig
 import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.linting.lintresult.LintResultService
 import org.gudelker.snippet.service.modules.snippets.dto.authorization.AuthorizeResponseDto
+import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto
+import org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto
 import org.gudelker.snippet.service.modules.snippets.dto.types.AccessType
+import org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType
 import org.gudelker.snippet.service.modules.snippets.dto.types.DirectionType
 import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
+import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -288,7 +292,7 @@ class SnippetServiceABMTests {
                     languageVersion = languageVersion,
                 )
             val input =
-                org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput(
+                UpdateSnippetFromEditorInput(
                     title = "New Title",
                     description = "New Desc",
                     content = "new content",
@@ -323,7 +327,7 @@ class SnippetServiceABMTests {
                     languageVersion = languageVersion,
                 )
             val input =
-                org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput(
+                UpdateSnippetFromEditorInput(
                     title = "New Title",
                     description = null,
                     content = null,
@@ -352,7 +356,7 @@ class SnippetServiceABMTests {
                     languageVersion = languageVersion,
                 )
             val input =
-                org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput(
+                UpdateSnippetFromEditorInput(
                     title = null,
                     description = null,
                     content = "bad content",
@@ -373,7 +377,7 @@ class SnippetServiceABMTests {
             val snippetId = UUID.randomUUID().toString()
             val jwt = mockk<Jwt> { every { subject } returns "user-123" }
             val input =
-                org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput(
+                UpdateSnippetFromEditorInput(
                     title = null,
                     description = null,
                     content = null,
@@ -388,7 +392,7 @@ class SnippetServiceABMTests {
 
         @Test
         fun `should create UpdateSnippetFromEditorInput with default values`() {
-            val input = org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput()
+            val input = UpdateSnippetFromEditorInput()
             assertEquals(null, input.title)
             assertEquals(null, input.description)
             assertEquals(null, input.content)
@@ -877,12 +881,12 @@ class SnippetServiceABMTests {
                 every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
                 every {
                     lintResultService.getSnippetLintComplianceType(snippetId)
-                } returns org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT
+                } returns ComplianceType.COMPLIANT
                 val result = snippetService.getSnippetById(snippetId.toString())
                 assertEquals(snippetId.toString(), result.id)
                 assertEquals("A", result.title)
                 assertEquals(
-                    org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT,
+                    ComplianceType.COMPLIANT,
                     result.compliance,
                 )
             }
@@ -914,13 +918,13 @@ class SnippetServiceABMTests {
                         null,
                         languageVersion,
                     )
-                val compliance = org.gudelker.snippet.service.modules.snippets.dto.types.ComplianceType.COMPLIANT
+                val compliance = ComplianceType.COMPLIANT
                 val content = "fun main() = println(\"Hello\")"
                 every { snippetRepository.findById(snippetId) } returns Optional.of(snippet)
                 every { lintResultService.getSnippetLintComplianceType(snippetId) } returns compliance
                 every { assetApiClient.getAsset("snippets", snippetId.toString()) } returns content
                 val snippetWithCompliance =
-                    org.gudelker.snippet.service.modules.snippets.dto.get.SnippetWithComplianceDto(
+                    SnippetWithComplianceDto(
                         id = snippetId.toString(),
                         title = snippet.title,
                         description = snippet.description,
@@ -931,14 +935,14 @@ class SnippetServiceABMTests {
                         compliance = compliance,
                     )
                 val snippetContentDto =
-                    org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto(
+                    SnippetContentDto(
                         content = content,
                         snippet = snippetWithCompliance,
                     )
                 // Simula el flujo del controller/servicio
                 val resultSnippet = snippetService.getSnippetById(snippetId.toString())
                 val resultContent = assetApiClient.getAsset("snippets", snippetId.toString())
-                val resultDto = org.gudelker.snippet.service.modules.snippets.dto.get.SnippetContentDto(resultContent, resultSnippet)
+                val resultDto = SnippetContentDto(resultContent, resultSnippet)
                 assertEquals(snippetContentDto, resultDto)
                 assertEquals(content, resultDto.content)
                 assertEquals(snippetWithCompliance, resultDto.snippet)

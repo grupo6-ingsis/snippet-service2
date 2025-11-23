@@ -45,8 +45,8 @@ class TestSnippetController(
         @PathVariable id: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<String> {
-        val id = UUID.fromString(id)
-        testSnippetService.deleteTestSnippet(id)
+        val uuid = UUID.fromString(id)
+        testSnippetService.deleteTestSnippet(uuid)
         return "Deleted successfully".let { ResponseEntity.ok(it) }
     }
 

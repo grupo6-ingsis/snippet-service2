@@ -121,7 +121,7 @@ class SnippetService(
             ex.printStackTrace()
             throw ex
         }
-        parseAndUpdateSnippet(input, snippet, authApiClient)
+        parseAndUpdateSnippet(input, snippet)
         snippetRepository.save(snippet)
         updateSnippetAsset(assetApiClient, snippetId, input.content)
         orchestratorLintingService.lintSingleSnippet(UUID.fromString(snippetId), userId)
@@ -352,7 +352,6 @@ class SnippetService(
     private fun parseAndUpdateSnippet(
         input: UpdateSnippetFromEditorInput,
         snippet: Snippet,
-        authApiClient: AuthApiClient,
     ) {
         if (input.content != null) {
             val parseRequest =
