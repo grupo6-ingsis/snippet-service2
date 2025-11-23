@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-class FormatConfigTests {
+class FormatConfigServiceTests {
     private lateinit var formatConfigRepository: FormatConfigRepository
     private lateinit var formatRuleRepository: FormatRuleRepository
     private lateinit var formatConfigService: FormatConfigService

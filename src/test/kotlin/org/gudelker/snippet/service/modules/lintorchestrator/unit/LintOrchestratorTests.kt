@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.gudelker.snippet.service.modules.linting.LintingOrchestratorService
+import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfig
 import org.gudelker.snippet.service.modules.linting.lintconfig.LintConfigService
 import org.gudelker.snippet.service.modules.linting.lintrule.LintRule
 import org.gudelker.snippet.service.modules.linting.lintrule.LintRuleRepository
@@ -48,7 +49,7 @@ class LintOrchestratorTests {
             val userId = "user-1"
             val rule = LintRule().apply { name = "Rule1" }
             val config =
-                mockk<org.gudelker.snippet.service.modules.linting.lintconfig.LintConfig> {
+                mockk<LintConfig> {
                     every { lintRule } returns rule
                     every { ruleValue } returns "val"
                 }
@@ -75,7 +76,7 @@ class LintOrchestratorTests {
             val snippetId2 = UUID.randomUUID()
             val rule = LintRule().apply { name = "Rule1" }
             val config =
-                mockk<org.gudelker.snippet.service.modules.linting.lintconfig.LintConfig> {
+                mockk<LintConfig> {
                     every { lintRule } returns rule
                     every { ruleValue } returns "val"
                 }
@@ -108,7 +109,7 @@ class LintOrchestratorTests {
             val userId = "user-1"
             val rule = LintRule().apply { name = "Rule1" }
             val config =
-                mockk<org.gudelker.snippet.service.modules.linting.lintconfig.LintConfig> {
+                mockk<LintConfig> {
                     every { lintRule } returns rule
                     every { ruleValue } returns "val"
                 }

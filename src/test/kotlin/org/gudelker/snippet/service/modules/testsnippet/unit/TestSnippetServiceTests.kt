@@ -14,6 +14,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.PermissionType
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippet
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippetRepository
 import org.gudelker.snippet.service.modules.testsnippet.TestSnippetService
+import org.gudelker.snippet.service.modules.testsnippet.dto.CreateTestSnippetResponseDto
 import org.gudelker.snippet.service.modules.testsnippet.input.CreateTestSnippetRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -69,7 +70,7 @@ class TestSnippetServiceTests {
 
             // Uso del DTO en el test (mapeo correcto)
             val responseDto =
-                org.gudelker.snippet.service.modules.testsnippet.dto.CreateTestSnippetResponseDto(
+                CreateTestSnippetResponseDto(
                     id = testSnippet.id?.toString() ?: "",
                     snippetId = testSnippet.snippet.id?.toString() ?: "",
                     name = testSnippet.name,
@@ -336,7 +337,7 @@ class TestSnippetServiceTests {
             every { assetApiClient.getAsset("snippets", snippetId) } returns "code"
             every {
                 engineApiClient.interpretSnippet(any())
-            } returns InterpretSnippetResponse(arrayListOf(), org.gudelker.snippet.service.api.ResultType.FAILURE)
+            } returns InterpretSnippetResponse(arrayListOf(), ResultType.FAILURE)
             assertFailsWith<IllegalStateException> {
                 testSnippetService.runTestSnippets(request, userId)
             }

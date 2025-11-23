@@ -65,7 +65,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -84,7 +84,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns null
@@ -100,7 +100,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } throws RuntimeException("fail")
@@ -144,7 +144,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -178,7 +178,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -196,7 +196,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns null
@@ -212,7 +212,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } throws RuntimeException("fail")
@@ -238,7 +238,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -270,7 +270,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -294,7 +294,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -317,7 +317,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -338,7 +338,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -359,7 +359,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } returns getSpec
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -385,7 +385,7 @@ class Auth0UsersTests {
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<java.net.URI>()) } returns getSpec
+            every { uriSpec.uri(any<URI>()) } returns getSpec
             every { getSpec.header(any(), any()) } returns getSpec
             every { getSpec.retrieve() } returns retrieveSpec
             every { retrieveSpec.body(any<ParameterizedTypeReference<Map<String, Any>>>()) } returns responseMap
@@ -401,7 +401,7 @@ class Auth0UsersTests {
             val uriSpec = mockk<RequestHeadersUriSpec<*>>()
             val getSpec = mockk<RestClient.RequestHeadersSpec<*>>()
             val retrieveSpec = mockk<RestClient.ResponseSpec>()
-            val builtUri = java.net.URI("https://test.auth0.com/api/v2/users")
+            val builtUri = URI("https://test.auth0.com/api/v2/users")
             val uriBuilder = mockk<UriBuilder>(relaxed = true)
             every { uriBuilder.scheme(any()) } returns uriBuilder
             every { uriBuilder.host(any()) } returns uriBuilder
@@ -409,8 +409,8 @@ class Auth0UsersTests {
             every { uriBuilder.queryParam(any(), any()) } returns uriBuilder
             every { uriBuilder.build() } returns builtUri
             every { restClient.get() } returns uriSpec
-            every { uriSpec.uri(any<Function<UriBuilder, java.net.URI>>()) } answers {
-                val fn = firstArg<Function<UriBuilder, java.net.URI>>()
+            every { uriSpec.uri(any<Function<UriBuilder, URI>>()) } answers {
+                val fn = firstArg<Function<UriBuilder, URI>>()
                 fn.apply(uriBuilder)
                 getSpec
             }

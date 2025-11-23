@@ -104,31 +104,29 @@ tasks.withType(JacocoCoverageVerification) {
 	violationRules {
 		rule {
 			limit {
-				minimum = 0.6
+				minimum = 0.8
 			}
 		}
-		rule {
-			element = 'CLASS'
-			excludes = [
+	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
 				'**/model/**',
 				'**/config/**',
 				'**/controller/**',
 				'**/controllers/**',
 				'**/repository/**',
 				'**/repositories/**',
-				'**/*Config',
-				'**/*Controller',
-				'**/*Repository',
-				'**/*Application',
-				'**/*ApiClient',
-                '**/*Auth0UsersService*',
-				'**/*Main*',
-				'**/*Seeder',
-			]
-			limit {
-				minimum = 0.0
-			}
-		}
+				'**/*Config.*',
+				'**/*Controller.*',
+				'**/*Repository.*',
+				'**/*Application.*',
+				'**/*ApiClient.*',
+				'**/*Main*.*',
+				'**/*Main$*.*',
+				'**/*Seeder.*',
+			])
+		}))
 	}
 }
 
