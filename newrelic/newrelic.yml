@@ -136,7 +136,7 @@ common: &default_settings
       context_data:
 
         # When true, application logs will contain context data.
-        enabled: false
+        enabled: true
 
         # A comma separated list of attribute keys whose values should be sent to New Relic.
         #include:
@@ -614,15 +614,15 @@ common: &default_settings
 
 development:
   <<: *default_settings
-  app_name: My Application (Development)
+  app_name: Snippet Service (Development)
 
 test:
   <<: *default_settings
-  app_name: My Application (Test)
+  app_name: Snippet Service (Test)
 
 production:
   <<: *default_settings
 
 staging:
   <<: *default_settings
-  app_name: My Application (Staging)
+  app_name: Snippet Service (Staging)

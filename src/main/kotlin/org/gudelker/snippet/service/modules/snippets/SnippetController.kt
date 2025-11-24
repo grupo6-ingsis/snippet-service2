@@ -14,6 +14,7 @@ import org.gudelker.snippet.service.modules.snippets.dto.types.SortByType
 import org.gudelker.snippet.service.modules.snippets.dto.update.UpdateSnippetFromEditorResponse
 import org.gudelker.snippet.service.modules.snippets.input.create.CreateSnippetFromEditor
 import org.gudelker.snippet.service.modules.snippets.input.update.UpdateSnippetFromEditorInput
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -41,9 +42,14 @@ class SnippetController(
     private val assetApiClient: AssetApiClient,
     private val formattingOrchestratorService: FormattingOrchestratorService,
 ) {
+    private val logger = LoggerFactory.getLogger(SnippetController::class.java)
+
     @GetMapping("/all")
     fun getAllSnippets(): List<Snippet> {
-        return snippetService.getAllSnippets()
+        logger.info("Fetching all snippets")
+        val snippets = snippetService.getAllSnippets()
+        logger.info("Successfully retrieved {} snippets", snippets.size)
+        return snippets
     }
 
     @PostMapping("")
@@ -51,7 +57,10 @@ class SnippetController(
         @RequestBody input: CreateSnippetFromEditor,
         @AuthenticationPrincipal jwt: Jwt,
     ): Snippet {
-        return snippetService.createSnippetFromEditor(input, jwt)
+        logger.info("Creating snippet for user: {} with title: {}", jwt.subject, input.title)
+        val snippet = snippetService.createSnippetFromEditor(input, jwt)
+        logger.info("Successfully created snippet with id: {} for user: {}", snippet.id, jwt.subject)
+        return snippet
     }
 
     @PutMapping("/{snippetId}")
@@ -60,11 +69,10 @@ class SnippetController(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): UpdateSnippetFromEditorResponse {
-        return snippetService.updateSnippetFromEditor(
-            input = input,
-            jwt = jwt,
-            snippetId,
-        )
+        logger.info("Updating snippet: {} by user: {}", snippetId, jwt.subject)
+        val response = snippetService.updateSnippetFromEditor(input = input, jwt = jwt, snippetId)
+        logger.info("Successfully updated snippet: {} by user: {}", snippetId, jwt.subject)
+        return response
     }
 
     @GetMapping("/user/{userId}")
@@ -72,7 +80,10 @@ class SnippetController(
         @PathVariable userId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): List<Snippet> {
-        return snippetService.getSnippetsByUserId(userId)
+        logger.info("Fetching snippets for userId: {} requested by: {}", userId, jwt.subject)
+        val snippets = snippetService.getSnippetsByUserId(userId)
+        logger.info("Retrieved {} snippets for userId: {}", snippets.size, userId)
+        return snippets
     }
 
     @GetMapping("/paginated")
@@ -87,7 +98,20 @@ class SnippetController(
         @RequestParam(defaultValue = "NAME") sortBy: SortByType,
         @RequestParam(defaultValue = "DESC") direction: DirectionType,
     ): Page<SnippetWithComplianceDto> {
-        return snippetService.getSnippetsByFilter(jwt, page, pageSize, accessType, name, language, passedLint, sortBy, direction)
+        logger.info(
+            "Fetching paginated snippets for user: {} - page: {}, pageSize: {}, " +
+                "accessType: {}, name: '{}', language: '{}', passedLint: {}, sortBy: {}, direction: {}",
+            jwt.subject, page, pageSize, accessType, name, language, passedLint, sortBy, direction,
+        )
+        val result = snippetService.getSnippetsByFilter(jwt, page, pageSize, accessType, name, language, passedLint, sortBy, direction)
+        logger.info(
+            "Retrieved {} snippets (page {}/{}) for user: {}",
+            result.numberOfElements,
+            result.number + 1,
+            result.totalPages,
+            jwt.subject,
+        )
+        return result
     }
 
     @GetMapping("/{snippetId}")
@@ -95,36 +119,32 @@ class SnippetController(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<SnippetContentDto> {
+        logger.info("User: {} requesting snippet: {}", jwt.subject, snippetId)
         val userId = jwt.subject
         val token = cachedTokenService.getToken()
         try {
+            logger.debug("Checking permissions for user: {} on snippet: {}", userId, snippetId)
             val permission: PermissionType? =
                 restClient.get()
-                    .uri(
-                        "http://authorization:8080/api/permissions/{snippetId}?userId={userId}",
-                        snippetId,
-                        userId,
-                    )
+                    .uri("http://authorization:8080/api/permissions/{snippetId}?userId={userId}", snippetId, userId)
                     .header("Authorization", "Bearer $token")
                     .retrieve()
                     .toEntity<PermissionType>()
                     .body
 
             if (permission == null) {
+                logger.warn("Access denied: User {} does not have permission for snippet: {}", userId, snippetId)
                 return ResponseEntity.status(403).build()
             }
 
+            logger.debug("Permission granted: {} for user: {} on snippet: {}", permission, userId, snippetId)
             val snippet = snippetService.getSnippetById(snippetId)
-            val content =
-                assetApiClient.getAsset(
-                    container = "snippets",
-                    key = snippetId,
-                )
+            val content = assetApiClient.getAsset(container = "snippets", key = snippetId)
 
+            logger.info("Successfully retrieved snippet: {} for user: {}", snippetId, userId)
             return ResponseEntity.ok(SnippetContentDto(content, snippet))
         } catch (e: Exception) {
-            println("Error calling authorization service: ${e.message}")
-            e.printStackTrace()
+            logger.error("Error retrieving snippet: {} for user: {} - Error: {}", snippetId, userId, e.message, e)
             return ResponseEntity.status(500).build()
         }
     }
@@ -135,6 +155,7 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable sharedUserId: String,
     ): ResponseEntity<ShareSnippetResponseDto> {
+        logger.info("User: {} attempting to share snippet: {} with user: {}", jwt.subject, snippetId, sharedUserId)
         return try {
             val response =
                 snippetService.shareSnippet(
@@ -142,12 +163,23 @@ class SnippetController(
                     sharedUserId = sharedUserId,
                     snippetId = UUID.fromString(snippetId),
                 )
+            logger.info("Successfully shared snippet: {} from user: {} to user: {}", snippetId, jwt.subject, sharedUserId)
             ResponseEntity.ok(response)
         } catch (e: IllegalArgumentException) {
+            logger.warn("Invalid argument when sharing snippet: {} - Error: {}", snippetId, e.message)
             ResponseEntity.badRequest().build()
         } catch (e: AccessDeniedException) {
+            logger.warn("Access denied: User {} cannot share snippet: {}", jwt.subject, snippetId)
             ResponseEntity.status(403).build()
         } catch (e: Exception) {
+            logger.error(
+                "Unexpected error sharing snippet: {} from user: {} to user: {} - Error: {}",
+                snippetId,
+                jwt.subject,
+                sharedUserId,
+                e.message,
+                e,
+            )
             ResponseEntity.status(500).build()
         }
     }
@@ -157,14 +189,19 @@ class SnippetController(
         @PathVariable snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<Void> {
+        logger.info("User: {} attempting to delete snippet: {}", jwt.subject, snippetId)
         return try {
             snippetService.deleteSnippet(snippetId, jwt.subject)
+            logger.info("Successfully deleted snippet: {} by user: {}", snippetId, jwt.subject)
             ResponseEntity.noContent().build()
         } catch (e: IllegalArgumentException) {
+            logger.warn("Invalid argument when deleting snippet: {} - Error: {}", snippetId, e.message)
             ResponseEntity.badRequest().build()
         } catch (e: AccessDeniedException) {
+            logger.warn("Access denied: User {} cannot delete snippet: {}", jwt.subject, snippetId)
             ResponseEntity.status(403).build()
         } catch (e: Exception) {
+            logger.error("Unexpected error deleting snippet: {} by user: {} - Error: {}", snippetId, jwt.subject, e.message, e)
             ResponseEntity.status(500).build()
         }
     }
