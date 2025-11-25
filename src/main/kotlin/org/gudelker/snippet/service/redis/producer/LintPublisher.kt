@@ -12,12 +12,8 @@ class LintPublisher(
     private val objectMapper: ObjectMapper,
 ) : RedisStreamProducer("lint-requests", redisTemplate) {
     fun publishLintRequest(request: LintRequest): RecordId? {
-        println("Publishing to Redis stream: $request")
-        // Serializar el objeto a JSON string
         val jsonString = objectMapper.writeValueAsString(request)
-        println("Serialized JSON: $jsonString")
         val recordId = emit(jsonString)
-        println("Published with RecordId: $recordId")
         return recordId
     }
 }

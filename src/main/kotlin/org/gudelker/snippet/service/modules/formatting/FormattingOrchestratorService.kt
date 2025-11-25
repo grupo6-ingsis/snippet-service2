@@ -36,9 +36,7 @@ class FormattingOrchestratorService(
                         userRules = formatRules,
                         allRules = lintRulesNames,
                     )
-                println("Publishing lint request to Redis: $req") // Add this line
                 formatPublisher.publishFormatRequest(req)
-                println("Published lint request to Redis for snippet $snippetId") // And this
             } catch (err: Exception) {
                 throw HttpClientErrorException(HttpStatus.NOT_FOUND, "snippet ID is missing in JWT")
             }

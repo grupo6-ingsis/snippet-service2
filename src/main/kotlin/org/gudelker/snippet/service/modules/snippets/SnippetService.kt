@@ -52,7 +52,6 @@ class SnippetService(
 
     fun getSnippetsByUserId(userId: String): List<Snippet> {
         val snippets = snippetRepository.findByOwnerId(userId)
-        // Initialize lazy-loaded relationships to avoid serialization issues
         snippets.forEach { it.languageVersion.language.name }
         return snippets
     }
@@ -63,7 +62,6 @@ class SnippetService(
             snippetRepository.findById(snippetUuid)
                 .orElseThrow { RuntimeException("Snippet not found") }
         val compliance = lintResultService.getSnippetLintComplianceType(snippetUuid)
-        // Initialize lazy-loaded relationships to avoid serialization issues
         snippet.languageVersion.language.name
         return SnippetWithComplianceDto(
             id = snippetId,
@@ -103,7 +101,6 @@ class SnippetService(
             throw RuntimeException("Failed to save content", ex)
         }
         orchestratorLintingService.lintSingleSnippet(snippetId, userId)
-        // Initialize lazy-loaded relationships to avoid serialization issues
         saved.languageVersion.language.name
         return saved
     }
@@ -187,13 +184,9 @@ class SnippetService(
                 val matchesName = name.isEmpty() || snippet.title.contains(name, ignoreCase = true)
                 val matchesLanguage = language.isEmpty() || snippet.languageVersion.language.name.equals(language, ignoreCase = true)
 
-                // Filtro de linting:
-                // - Si passedLint es null (no se pasó el parámetro), no filtramos por lint (todos pasan)
-                // - Si passedLint es true, solo mostramos snippets que pasaron el linting
-                // - Si passedLint es false, mostramos solo los que NO pasaron el linting
                 val matchesLintFilter =
                     when (passedLint) {
-                        null -> true // No filtrar por lint
+                        null -> true
                         true -> userLintRules.isEmpty() || lintResultService.snippetPassesLinting(snippet.id.toString())
                         false -> userLintRules.isNotEmpty() && !lintResultService.snippetPassesLinting(snippet.id.toString())
                     }

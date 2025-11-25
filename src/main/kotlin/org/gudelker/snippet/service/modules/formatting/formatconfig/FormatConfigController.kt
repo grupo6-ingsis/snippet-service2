@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/formatconfig")
 class FormatConfigController(
     private val formatConfigService: FormatConfigService,
-    private val orchestratorFormattingservice: FormattingOrchestratorService,
+    private val orchestratorFormattingService: FormattingOrchestratorService,
 ) {
     private val logger = LoggerFactory.getLogger(FormatConfigController::class.java)
 
@@ -40,7 +40,7 @@ class FormatConfigController(
 
         return if (result != null) {
             logger.info("Successfully modified format rule for user: {}", jwt.subject)
-            orchestratorFormattingservice.formatUserSnippets(jwt.subject)
+            orchestratorFormattingService.formatUserSnippets(jwt.subject)
             logger.info("Triggered formatting for all snippets of user: {}", jwt.subject)
             ResponseEntity.ok(result)
         } else {

@@ -12,11 +12,8 @@ class FormatPublisher(
     private val objectMapper: ObjectMapper,
 ) : RedisStreamProducer("formatting-requests", redisTemplate) {
     fun publishFormatRequest(request: FormatRequest): RecordId? {
-        println("Publishing to Redis stream: $request")
         val jsonString = objectMapper.writeValueAsString(request)
-        println("Serialized JSON: $jsonString")
         val recordId = emit(jsonString)
-        println("Published with RecordId: $recordId")
         return recordId
     }
 }

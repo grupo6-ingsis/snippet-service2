@@ -23,7 +23,6 @@ class LintResultService(
             snippetRepository.findById(UUID.fromString(snippetId))
                 .orElseThrow { IllegalArgumentException("Snippet not found: $snippetId") }
 
-        // Find existing result or create new one
         val lintResult = lintResultRepository.findBySnippetId(snippet.id!!) ?: LintResult()
 
         lintResult.apply {
