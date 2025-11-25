@@ -31,17 +31,6 @@ class AuthApiClient(
             ?: throw RuntimeException("No response from authorization service")
     }
 
-    fun authorizeUpdateSnippet(snippetId: UUID): Boolean {
-        val machineToken = cachedTokenService.getToken()
-
-        return restClient.get()
-            .uri("http://authorization:8080/api/permissions/authorize-update/$snippetId")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
-            .retrieve()
-            .body(Boolean::class.java)
-            ?: throw RuntimeException("No response from authorization service")
-    }
-
     fun isUserAuthorizedToWriteSnippet(
         snippetId: String,
         userId: String,
@@ -64,9 +53,6 @@ class AuthApiClient(
     ): List<UUID> {
         val machineToken = cachedTokenService.getToken()
 
-        println("🔍 Calling authorization service")
-        println("🔍 UserId: $userId, AccessType: $accessType")
-
         return try {
             val response =
                 restClient.get()
@@ -83,11 +69,8 @@ class AuthApiClient(
                     .header(HttpHeaders.AUTHORIZATION, "Bearer $machineToken")
                     .retrieve()
                     .body(object : ParameterizedTypeReference<List<UUID>>() {})
-
-            println("✅ Got ${response?.size ?: 0} snippets from authorization")
             response ?: emptyList()
         } catch (e: Exception) {
-            println("❌ Error calling authorization service: ${e.message}")
             e.printStackTrace()
             emptyList()
         }
@@ -125,7 +108,6 @@ class AuthApiClient(
                 .body(object : ParameterizedTypeReference<List<String>>() {})
                 ?: emptyList()
         } catch (e: Exception) {
-            println("❌ Error getting users with access to snippet $snippetId: ${e.message}")
             e.printStackTrace()
             emptyList()
         }
