@@ -52,6 +52,11 @@ class SnippetController(
         return snippets
     }
 
+    @GetMapping("topo")
+    fun getTopo(): String {
+        return "topo"
+    }
+
     @PostMapping("")
     fun createSnippet(
         @RequestBody input: CreateSnippetFromEditor,
