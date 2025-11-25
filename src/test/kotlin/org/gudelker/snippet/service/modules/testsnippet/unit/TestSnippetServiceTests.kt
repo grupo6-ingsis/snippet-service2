@@ -93,7 +93,6 @@ class TestSnippetServiceTests {
             assertFailsWith<IllegalArgumentException> {
                 testSnippetService.createTestSnippet(request, userId)
             }
-            assertEquals(2, 3)
         }
 
         @Test
